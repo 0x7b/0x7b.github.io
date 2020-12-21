@@ -66,4 +66,19 @@
         <tag>Hexo</tag>
       </tags>
   </entry>
+  <entry>
+    <title>语雀Hexo模板</title>
+    <url>/posts/29424/</url>
+    <content><![CDATA[<p><img src= "/img/loading.gif" data-src="https://cdn.jsdelivr.net/gh/0x7b/CDN/img/74621191_p0.jpg" alt="image"></p>
+<figure class="highlight markdown"><table><tr><td class="code"><pre><span class="line">---</span><br><span class="line">title: 语雀Hexo模板</span><br><span class="line">date: 2020-12-19 15:05:21</span><br><span class="line">updated:</span><br><span class="line">tags: [Hexo]</span><br><span class="line">categories: [Hexo]</span><br><span class="line">keywords: "模板"</span><br><span class="line">cover: https://cdn.jsdelivr.net/gh/0x7b/CDN/img/64992506_p0.png</span><br><span class="line">toc: True</span><br><span class="line">abbrlink:</span><br><span class="line">description: 这是一个模板,方便在语雀中快速编写符合Yuque-Hexo语法得文章,按照该模板即可保证文章格式。</span><br><span class="line">---</span><br></pre></td></tr></table></figure>
+
+<p>这是一个模板,方便在语雀中快速编写符合 Yuque-Hexo 语法得文章,按照该模板即可保证文章格式。</p>
+]]></content>
+      <categories>
+        <category>Hexo</category>
+      </categories>
+      <tags>
+        <tag>Hexo</tag>
+      </tags>
+  </entry>
 </search>
