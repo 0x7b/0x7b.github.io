@@ -1,0 +1,4 @@
+User-agent: *
+Disallow: 
+Sitemap: https://www.0x7b.cn/sitemap.xml
+Sitemap: https://www.0x7b.cn/baidusitemap.xml
