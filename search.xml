@@ -43,13 +43,21 @@
   <entry>
     <title>语雀-Hexo测试</title>
     <url>/posts/24383/</url>
-    <content><![CDATA[<p><img src= "/img/loading.gif" data-src="https://cdn.nlark.com/yuque/0/2020/jpeg/8398873/1608469169149-999d6479-07c6-4b06-9d59-ab70e0278c16.jpeg#align=left&display=inline&height=1414&margin=%5Bobject%20Object%5D&name=&originHeight=1414&originWidth=2000&size=0&status=done&style=none&width=2000" alt=""><br>此处分割线</p>
+    <content><![CDATA[<p>图片 HTML 标签方式引入<br><img src= "/img/loading.gif" data-src="https://cdn.nlark.com/yuque/0/2020/jpeg/8398873/1608550126364-ceebf191-667a-4bc1-94be-567b9ab49555.jpeg#align=left&display=inline&height=1414&margin=%5Bobject%20Object%5D&originHeight=1414&originWidth=2000&size=0&status=done&style=none&width=2000" alt=""></p>
+<figure class="highlight html"><table><tr><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">img</span> <span class="attr">src</span>=<span class="string">"https://cdn.jsdelivr.net/gh/0x7b/CDN/img/65033404_p0.jpg"</span> /&gt;</span></span><br></pre></td></tr></table></figure>
+
+<p>此处分割线</p>
 <hr>
-<p><img src= "/img/loading.gif" data-src="https://cdn.jsdelivr.net/gh/0x7b/CDN/img/65033404_p0.jpg" alt="image.jpg"><br>忙活好久啦，也不知道格式会不会出错<br>文章 font-master 源码</p>
-<figure class="highlight markdown"><table><tr><td class="code"><pre><span class="line">---</span><br><span class="line">title: YuQue<span class="emphasis">_Hexo_</span>Test</span><br><span class="line">tags:</span><br><span class="line"><span class="bullet">  - </span>Hexo</span><br><span class="line">categories:</span><br><span class="line"><span class="bullet">  - </span>Hexo</span><br><span class="line">keywords: "Test"</span><br><span class="line">cover: https://cdn.jsdelivr.net/gh/0x7b/CDN/img/69794774_p0.png</span><br><span class="line">toc: True</span><br><span class="line">abbrlink:</span><br><span class="line">---</span><br></pre></td></tr></table></figure>
+<p>markdown 格式引入图片<br><img src= "/img/loading.gif" data-src="https://cdn.jsdelivr.net/gh/0x7b/CDN/img/65033404_p0.jpg" alt="image.jpg"></p>
+<figure class="highlight markdown"><table><tr><td class="code"><pre><span class="line">![<span class="string">image.jpg</span>](<span class="link">https://cdn.jsdelivr.net/gh/0x7b/CDN/img/65033404_p0.jpg</span>)</span><br></pre></td></tr></table></figure>
+
+<p>忙活好久啦，也不知道格式会不会出错<br>文章 font-master 源码</p>
+<figure class="highlight markdown"><table><tr><td class="code"><pre><span class="line">---</span><br><span class="line">title: 语雀-Hexo测试</span><br><span class="line">tags: [Hexo]</span><br><span class="line">categories: [Hexo]</span><br><span class="line">keywords: "Test"</span><br><span class="line">cover: https://cdn.jsdelivr.net/gh/0x7b/CDN/img/49112186_p0.png</span><br><span class="line">toc: True</span><br><span class="line">abbrlink:</span><br><span class="line">---</span><br></pre></td></tr></table></figure>
 
 <p>引入外部图片测试（语雀）<br><img src= "/img/loading.gif" data-src="https://cdn.nlark.com/yuque/0/2020/png/8398873/1608469474017-272fd18b-d2be-4615-b4e5-a4602199d96f.png#align=left&display=inline&height=642&margin=%5Bobject%20Object%5D&name=image.png&originHeight=860&originWidth=999&size=134894&status=done&style=none&width=746" alt="image.png"><br>目前看来还是会受防盗链的影响<br><a href="https://github.com/x-cold/yuque-hexo/issues/41" target="_blank" rel="noopener">解决办法</a></p>
 <figure class="highlight html"><table><tr><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">meta</span> <span class="attr">name</span>=<span class="string">"referrer"</span> <span class="attr">content</span>=<span class="string">"no-referrer"</span> /&gt;</span></span><br></pre></td></tr></table></figure>
+
+<p>但这个解决方法具有局限性：只能在 Chrome 浏览器中生效</p>
 ]]></content>
       <categories>
         <category>Hexo</category>
