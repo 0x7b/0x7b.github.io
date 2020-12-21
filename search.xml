@@ -57,7 +57,7 @@
 <p>引入外部图片测试（语雀）<br><img src= "/img/loading.gif" data-src="https://cdn.nlark.com/yuque/0/2020/png/8398873/1608469474017-272fd18b-d2be-4615-b4e5-a4602199d96f.png#align=left&display=inline&height=642&margin=%5Bobject%20Object%5D&name=image.png&originHeight=860&originWidth=999&size=134894&status=done&style=none&width=746" alt="image.png"><br>目前看来还是会受防盗链的影响<br><a href="https://github.com/x-cold/yuque-hexo/issues/41" target="_blank" rel="noopener">解决办法</a></p>
 <figure class="highlight html"><table><tr><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">meta</span> <span class="attr">name</span>=<span class="string">"referrer"</span> <span class="attr">content</span>=<span class="string">"no-referrer"</span> /&gt;</span></span><br></pre></td></tr></table></figure>
 
-<p>但这个解决方法具有局限性：只能在 Chrome 浏览器中生效</p>
+<p>可直接在语雀中添加，即可为这篇文章 no-referrer 属性<br>但这个解决方法也具有局限性：只能在 Chrome 浏览器中生效</p>
 ]]></content>
       <categories>
         <category>Hexo</category>
