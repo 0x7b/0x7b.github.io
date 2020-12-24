@@ -41,6 +41,27 @@
       </tags>
   </entry>
   <entry>
+    <title>CDN下访问源站ERR_TOO_MANY_REDIRECTS</title>
+    <url>/posts/8611/</url>
+    <content><![CDATA[<h1 id="问题描述"><a href="#问题描述" class="headerlink" title="问题描述"></a>问题描述</h1><p>源站（GitHub pages）使用了 CDN，浏览器访问提示重定向过多</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">XXX.XXX.XXX 将您重定向的次数过多。</span><br><span class="line">尝试清除 Cookie.</span><br><span class="line">ERR_TOO_MANY_REDIRECTS</span><br></pre></td></tr></table></figure>
+
+<h1 id="问题原因"><a href="#问题原因" class="headerlink" title="问题原因"></a>问题原因</h1><p>Github Pages 开启了 Enforce HTTPS，且 CDN 中回源协议为 HTTP。此时客户端无论通过哪种协议访问源站的 CDN 加速域名，CDN 都会以 HTTP 协议回源。源站返回 301 永久重定向要求 CDN 重新以 HTTPS 访问，但 CDN 依旧会发送 HTTP 请求。以此往复，就会出现以下情况<br><img src= "/img/loading.gif" data-src="https://cdn.nlark.com/yuque/0/2020/png/8398873/1608797815687-7a6a498d-b0e1-4f0a-861a-e16a3cc39a08.png#align=left&display=inline&height=898&margin=%5Bobject%20Object%5D&originHeight=898&originWidth=1920&size=0&status=done&style=none&width=1920" alt=""></p>
+<h1 id="解决办法"><a href="#解决办法" class="headerlink" title="解决办法"></a>解决办法</h1><ul>
+<li>关闭源站强制 HTTPS 跳转功能</li>
+<li>在 CDN 管理控制台配置回源协议为 HTTPS，或协议跟随（腾讯云，其他 CDN 厂商同理）</li>
+</ul>
+<p><a href="https://help.aliyun.com/knowledge_detail/148179.html" target="_blank" rel="noopener">参考连接</a></p>
+]]></content>
+      <categories>
+        <category>BUGs</category>
+      </categories>
+      <tags>
+        <tag>Hexo</tag>
+        <tag>CDN</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>语雀-Hexo测试</title>
     <url>/posts/24383/</url>
     <content><![CDATA[<p>图片 HTML 标签方式引入<br><img src= "/img/loading.gif" data-src="https://cdn.nlark.com/yuque/0/2020/jpeg/8398873/1608550126364-ceebf191-667a-4bc1-94be-567b9ab49555.jpeg#align=left&display=inline&height=1414&margin=%5Bobject%20Object%5D&originHeight=1414&originWidth=2000&size=0&status=done&style=none&width=2000" alt=""></p>

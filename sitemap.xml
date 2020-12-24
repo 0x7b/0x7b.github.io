@@ -2,6 +2,13 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   
   <url>
+    <loc>https://www.0x7b.cn/posts/8611/</loc>
+    
+    <lastmod>2020-12-24</lastmod>
+    
+  </url>
+  
+  <url>
     <loc>https://www.0x7b.cn/posts/34255/</loc>
     
     <lastmod>2020-12-24</lastmod>
@@ -115,6 +122,13 @@
     <priority>0.6</priority>
   </url>
   
+  <url>
+    <loc>https://www.0x7b.cn/tags/CDN/</loc>
+    <lastmod>2020-12-24</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
 
   
   <url>
@@ -126,6 +140,13 @@
   
   <url>
     <loc>https://www.0x7b.cn/categories/%E5%90%8E%E6%B8%97%E9%80%8F/</loc>
+    <lastmod>2020-12-24</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.0x7b.cn/categories/BUGs/</loc>
     <lastmod>2020-12-24</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
