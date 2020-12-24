@@ -23,13 +23,6 @@
   </url>
   
   <url>
-    <loc>https://www.0x7b.cn/posts/520520/</loc>
-    
-    <lastmod>2020-12-24</lastmod>
-    
-  </url>
-  
-  <url>
     <loc>https://www.0x7b.cn/about/index.html</loc>
     
     <lastmod>2020-12-24</lastmod>
@@ -95,13 +88,6 @@
 
   
   <url>
-    <loc>https://www.0x7b.cn/tags/Hexo/</loc>
-    <lastmod>2020-12-24</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
     <loc>https://www.0x7b.cn/tags/%E6%9D%83%E9%99%90%E7%BB%B4%E6%8C%81/</loc>
     <lastmod>2020-12-24</lastmod>
     <changefreq>daily</changefreq>
@@ -123,13 +109,6 @@
   </url>
   
 
-  
-  <url>
-    <loc>https://www.0x7b.cn/categories/Hexo/</loc>
-    <lastmod>2020-12-24</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
   
   <url>
     <loc>https://www.0x7b.cn/categories/%E5%90%8E%E6%B8%97%E9%80%8F/</loc>

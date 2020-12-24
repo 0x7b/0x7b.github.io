@@ -1,30 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <search>
   <entry>
-    <title>Hello World</title>
-    <url>/posts/520520/</url>
-    <content><![CDATA[<p>Welcome to <a href="https://hexo.io/" target="_blank" rel="noopener">Hexo</a>! This is your very first post. Check <a href="https://hexo.io/docs/" target="_blank" rel="noopener">documentation</a> for more info. If you get any problems when using Hexo, you can find the answer in <a href="https://hexo.io/docs/troubleshooting.html" target="_blank" rel="noopener">troubleshooting</a> or you can ask me on <a href="https://github.com/hexojs/hexo/issues" target="_blank" rel="noopener">GitHub</a>.</p>
-<h2 id="Quick-Start"><a href="#Quick-Start" class="headerlink" title="Quick Start"></a>Quick Start</h2><h3 id="Create-a-new-post"><a href="#Create-a-new-post" class="headerlink" title="Create a new post"></a>Create a new post</h3><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">$ hexo new <span class="string">"My New Post"</span></span><br></pre></td></tr></table></figure>
-
-<p>More info: <a href="https://hexo.io/docs/writing.html" target="_blank" rel="noopener">Writing</a></p>
-<h3 id="Run-server"><a href="#Run-server" class="headerlink" title="Run server"></a>Run server</h3><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">$ hexo server</span><br></pre></td></tr></table></figure>
-
-<p>More info: <a href="https://hexo.io/docs/server.html" target="_blank" rel="noopener">Server</a></p>
-<h3 id="Generate-static-files"><a href="#Generate-static-files" class="headerlink" title="Generate static files"></a>Generate static files</h3><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">$ hexo generate</span><br></pre></td></tr></table></figure>
-
-<p>More info: <a href="https://hexo.io/docs/generating.html" target="_blank" rel="noopener">Generating</a></p>
-<h3 id="Deploy-to-remote-sites"><a href="#Deploy-to-remote-sites" class="headerlink" title="Deploy to remote sites"></a>Deploy to remote sites</h3><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">$ hexo deploy</span><br></pre></td></tr></table></figure>
-
-<p>More info: <a href="https://hexo.io/docs/one-command-deployment.html" target="_blank" rel="noopener">Deployment</a></p>
-]]></content>
-      <categories>
-        <category>Hexo</category>
-      </categories>
-      <tags>
-        <tag>Hexo</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>克隆账户</title>
     <url>/posts/34255/</url>
     <content><![CDATA[<p><strong>1.克隆账号的原理</strong><br>　　在 注册表中有两处保存了账号的 SID 相对标志符，一处是注册表 HKEY_LOCAL_MACHINE\SAM\SAM\Domains\Account\Users 下的子键名，另一处是该子键的子项 F 的值。但微软犯了个不同步它们的错误，登录时用的是后者，查询时用前者。当用 Administrator 的 F 项覆盖其他账号的 F 项后，就造成了账号是管理员权限，但查询还是原来状态的情况，这就是所谓的克隆账号。<br>　　安全小知识：SID 也就是安全标识符（Security Identifiers），是标识用户、组和 计算机账户的唯一的号码。在第一次创建该账户时，将给网络上的每一个账户发布一个唯一的 SID。Windows 2000 中的内部进程将引用账户的 SID 而不是账户的用户或组名。如果创建账户，再删除账户，然后使用相同的   用户名创建另一个账户，则新账户将不具有授权给前一个账户的权力或权限，原因是该账户具有不同的 SID 号。<br><strong>2. 克隆账号的危害</strong><br>　　当 系统用户一旦被克隆，配合终端服务，就等于向攻击者开启了一扇隐蔽的后门，让攻击者可以随时进入你的系统，这一扇门你看不到,因为它依靠的是微软的终端服务，并没有释放病毒文件，所以也不会被杀毒 软件所查杀。<br><strong>3.克隆账号的常用方法</strong><br>① 使用工具克隆<br>首先创建一个用户，或者知道亦或者是能修改其他账户（如 guest）的密码<img src= "/img/loading.gif" data-src="https://cdn.nlark.com/yuque/0/2020/png/8398873/1608209253922-4dbf07b4-683a-4321-931b-7c10ef8af618.png#align=left&display=inline&height=28&margin=%5Bobject%20Object%5D&name=image.png&originHeight=40&originWidth=1059&size=8079&status=done&style=none&width=746" alt="image.png"><br>创建用户一般用的都是 net.exe，但有时候种种条件限制的时候我们可以使用 net1.exe。其实本质都是调用的 net1.exe。还不可以的话，我们可以用 copy 命令将 C:/Windows/System32/net1.exe 复制到其他地方并且改名。<br>如：copy C:/Windows/System32 1.exe 会把 C:/Windows/System32 复制到当前目录的 1.exe。就可以绕过一些只检测调用特定文件（如 C:/Windows/System32/net.exe）的 waf。<br><img src= "/img/loading.gif" data-src="https://cdn.nlark.com/yuque/0/2020/png/8398873/1608209564784-aa91482b-d61f-49da-b17d-da99200e7191.png#align=left&display=inline&height=60&margin=%5Bobject%20Object%5D&name=image.png&originHeight=65&originWidth=810&size=8092&status=done&style=none&width=746" alt="image.png">然后就可以通过 1.exe 执行命令了<br><img src= "/img/loading.gif" data-src="https://cdn.nlark.com/yuque/0/2020/png/8398873/1608209590521-889a74e3-0b43-4e4d-a28e-273fcde3c536.png#align=left&display=inline&height=487&margin=%5Bobject%20Object%5D&name=image.png&originHeight=505&originWidth=767&size=29304&status=done&style=none&width=740" alt="image.png"><br>上传 clone.exe，克隆账户</p>
