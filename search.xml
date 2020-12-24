@@ -87,8 +87,8 @@
       </tags>
   </entry>
   <entry>
-    <title>CDN下访问源站ERR_TOO_MANY_REDIRECTS</title>
-    <url>/posts/8612/</url>
+    <title>语雀Front-matter-demo</title>
+    <url>/posts/47397/</url>
     <content><![CDATA[<p>这是一个模板,方便在语雀中快速编写符合 Yuque-Hexo 语法得文章,按照该模板即可保证文章格式。</p>
 <figure class="highlight markdown"><table><tr><td class="code"><pre><span class="line">---</span><br><span class="line">title: CDN下访问源站ERR<span class="emphasis">_TOO_</span>MANY_REDIRECTS</span><br><span class="line">cover:</span><br><span class="line">sticky: 2</span><br><span class="line">date: 2020-12-21</span><br><span class="line">updated:</span><br><span class="line">tags: [BUGs]</span><br><span class="line">categories: [博客维护]</span><br><span class="line">keywords: "重定向,ERROR,CDN,REDIRECTS"</span><br><span class="line">toc: True</span><br><span class="line">abbrlink:</span><br><span class="line">description: 这是一个模板,方便在语雀中快速编写符合Yuque-Hexo语法得文章,按照该模板即可保证文章格式。</span><br><span class="line">---</span><br></pre></td></tr></table></figure>
 
