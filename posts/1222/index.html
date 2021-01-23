@@ -1,110 +1,306 @@
-<!DOCTYPE html><html lang="zh-CN" data-theme="light"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width,initial-scale=1"><title>CXF服务列表暴露引发的安全问题 | 0x7b's blog</title><meta name="description" content="前言好大哥无聊在逛网站的时候意外发现了某厂商的 Server list，此服务文档中记录大量的 services。测试结果也不出所料发现了 N+1 的 SQL 注入、HQL 注入、未授权访问及 xxe 等漏洞打包。提交 SRC 之后也是拿到了不错的赏金，就决定写（shui）篇文章记录以下，同时学习一下关于 WebService 和接口安全的知识。 前置知识Web Service 简介Web Ser"><meta name="keywords" content="WS,API,接口安全"><meta name="author" content="怎么PWN不了,linsbjl@gmail.com"><meta name="copyright" content="怎么PWN不了"><meta name="format-detection" content="telephone=no"><link rel="shortcut icon" href="/img/favicon.ico"><link rel="canonical" href="https://www.0x7b.cn/posts/1222/"><meta http-equiv="Cache-Control" content="no-transform"><meta http-equiv="Cache-Control" content="no-siteapp"><link rel="preconnect" href="//cdn.jsdelivr.net"/><link rel="preconnect" href="//www.google-analytics.com" crossorigin="crossorigin"/><link rel="preconnect" href="//fonts.googleapis.com" crossorigin="crossorigin"/><link rel="preconnect" href="//busuanzi.ibruce.info"/><meta name="google-site-verification" content="_Wlqt0a-ZAO1XhzoOq_yQXhSf1Kmu3X0YquYFaZgo24"/><meta property="og:type" content="article"><meta property="og:title" content="CXF服务列表暴露引发的安全问题"><meta property="og:url" content="https://www.0x7b.cn/posts/1222/"><meta property="og:site_name" content="0x7b's blog"><meta property="og:description" content="前言好大哥无聊在逛网站的时候意外发现了某厂商的 Server list，此服务文档中记录大量的 services。测试结果也不出所料发现了 N+1 的 SQL 注入、HQL 注入、未授权访问及 xxe 等漏洞打包。提交 SRC 之后也是拿到了不错的赏金，就决定写（shui）篇文章记录以下，同时学习一下关于 WebService 和接口安全的知识。 前置知识Web Service 简介Web Ser"><meta property="og:image" content="https://raw.githubusercontent.com/0x7b/CDN/master/img/20210122213800.png"><meta property="article:published_time" content="2021-01-15T16:00:00.000Z"><meta property="article:modified_time" content="2021-01-21T16:00:00.000Z"><meta name="twitter:card" content="summary"><script>var activateDarkMode = function () {
-  document.documentElement.setAttribute('data-theme', 'dark')
-  if (document.querySelector('meta[name="theme-color"]') !== null) {
-    document.querySelector('meta[name="theme-color"]').setAttribute('content', '#000')
-  }
-}
-var activateLightMode = function () {
-  document.documentElement.setAttribute('data-theme', 'light')
-  if (document.querySelector('meta[name="theme-color"]') !== null) {
-    document.querySelector('meta[name="theme-color"]').setAttribute('content', '#fff')
-  }
-}
 
-var getCookies = function (name) {
-  const value = `; ${document.cookie}`
-  const parts = value.split(`; ${name}=`)
-  if (parts.length === 2) return parts.pop().split(';').shift()
-}
 
-var autoChangeMode = 'false'
-var t = getCookies('theme')
-if (autoChangeMode === '1') {
-  var isDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches
-  var isLightMode = window.matchMedia('(prefers-color-scheme: light)').matches
-  var isNotSpecified = window.matchMedia('(prefers-color-scheme: no-preference)').matches
-  var hasNoSupport = !isDarkMode && !isLightMode && !isNotSpecified
+<!DOCTYPE html>
+<html lang="zh-CN" data-default-color-scheme=&#34;auto&#34;>
 
-  if (t === undefined) {
-    if (isLightMode) activateLightMode()
-    else if (isDarkMode) activateDarkMode()
-    else if (isNotSpecified || hasNoSupport) {
-      console.log('You specified no preference for a color scheme or your browser does not support it. I Schedule dark mode during night time.')
-      var now = new Date()
-      var hour = now.getHours()
-      var isNight = hour <= 6 || hour >= 18
-      isNight ? activateDarkMode() : activateLightMode()
-    }
-    window.matchMedia('(prefers-color-scheme: dark)').addListener(function (e) {
-      if (Cookies.get('theme') === undefined) {
-        e.matches ? activateDarkMode() : activateLightMode()
-      }
-    })
-  } else if (t === 'light') activateLightMode()
-  else activateDarkMode()
-} else if (autoChangeMode === '2') {
-  now = new Date()
-  hour = now.getHours()
-  isNight = hour <= 6 || hour >= 18
-  if (t === undefined) isNight ? activateDarkMode() : activateLightMode()
-  else if (t === 'light') activateLightMode()
-  else activateDarkMode()
-} else {
-  if (t === 'dark') activateDarkMode()
-  else if (t === 'light') activateLightMode()
-}</script><link rel="stylesheet" href="/css/index.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free/css/all.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@latest/dist/jquery.fancybox.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/node-snackbar/dist/snackbar.min.css"><link rel="next" title="CDN下访问源站ERR_TOO_MANY_REDIRECTS" href="https://www.0x7b.cn/posts/1221/"><script>(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
-(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
-m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
-})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
 
-ga('create', 'G-SMJVP2PTHN', 'auto');
-ga('send', 'pageview');
-</script><link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Titillium+Web&amp;display=swap"><script>var GLOBAL_CONFIG = { 
-  root: '/',
-  algolia: undefined,
-  localSearch: {"path":"search.xml","languages":{"hits_empty":"找不到您查询的内容:${query}"}},
-  translate: {"defaultEncoding":2,"translateDelay":0,"msgToTraditionalChinese":"繁","msgToSimplifiedChinese":"簡"},
-  noticeOutdate: {"limitDay":500,"position":"top","messagePrev":"It has been","messageNext":"days since the last update, the content of the article may be outdated."},
-  copy: {
-    success: '复制成功',
-    error: '复制错误',
-    noSupport: '浏览器不支持'
-  },
-  bookmark: {
-    message_prev: '按',
-    message_next: '键将本页加入书签'
-  },
-  runtime_unit: '天',
-  runtime: true,
-  copyright: undefined,
-  ClickShowText: undefined,
-  medium_zoom: true,
-  fancybox: true,
-  Snackbar: {"bookmark":{"message_prev":"按","message_next":"键将本页加入书签"},"chs_to_cht":"你已切换为繁体","cht_to_chs":"你已切换为简体","day_to_night":"你已切换为深色模式","night_to_day":"你已切换为浅色模式","bgLight":"#49b1f5","bgDark":"#121212","position":"bottom-left"},
-  justifiedGallery: {
-    js: 'https://cdn.jsdelivr.net/npm/justifiedGallery/dist/js/jquery.justifiedGallery.min.js',
-    css: 'https://cdn.jsdelivr.net/npm/justifiedGallery/dist/css/justifiedGallery.min.css'
-  },
-  baiduPush: false,
-  highlightCopy: true,
-  highlightLang: true,
-  isPhotoFigcaption: false,
-  islazyload: true,
-  isanchor: false    
-}</script><script>var GLOBAL_CONFIG_SITE = { 
-  isPost: true,
-  isHome: false,
-  isHighlightShrink: false,
-  isSidebar: true,
-  postUpdate: '2021-01-22 00:00:00'
-}</script><noscript><style>
-#nav {
-  opacity: 1
-}
-.justified-gallery img{
-  opacity: 1
-}
-</style></noscript><link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/sviptzk/HexoStaticFile@master/Hexo/css/flink.min.css"></head><body><div id="mobile-sidebar"><div id="menu_mask"></div><div id="mobile-sidebar-menus"><div class="mobile_author_icon"><img class="avatar-img" src="https://cdn.jsdelivr.net/gh/0x7b/CDN/img/20210103155815.jpg" onerror="onerror=null;src='/img/friend_404.gif'" alt="avatar"/></div><div class="mobile_post_data"><div class="mobile_data_item is-center"><div class="mobile_data_link"><a href="/archives/"><div class="headline">文章</div><div class="length_num">3</div></a></div></div><div class="mobile_data_item is-center">      <div class="mobile_data_link"><a href="/tags/"><div class="headline">标签</div><div class="length_num">4</div></a></div></div><div class="mobile_data_item is-center">     <div class="mobile_data_link"><a href="/categories/"><div class="headline">分类</div><div class="length_num">2</div></a></div></div></div><hr/><div class="menus_items"><div class="menus_item"><a class="site-page" href="/home/"><i class="fa-fw fa fa-home"></i><span> 主页</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fa fa-archive"></i><span> 时间轴</span></a></div><div class="menus_item"><a class="site-page"><i class="fa-fw fas fa-list"></i><span> 生活</span><i class="fas fa-chevron-down menus-expand"></i></a><ul class="menus_item_child"><li><a class="site-page" href="/bangumis/"><i class="fa-fw fab fa-youtube"></i><span> 番剧</span></a></li><li><a class="site-page" href="/movies/"><i class="fa-fw fa fa-film"></i><span> 电影</span></a></li><li><a class="site-page" href="/books/"><i class="fa-fw fas fa-book"></i><span> 书单</span></a></li><li><a class="site-page" href="/music/"><i class="fa-fw fa fa-music"></i><span> 音乐</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="/link/"><i class="fa-fw fa fa-link"></i><span> 友链</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fa fa-heart"></i><span> 关于我</span></a></div></div></div></div><i class="fas fa-arrow-right on" id="toggle-sidebar"></i><div id="sidebar"><div class="sidebar-toc"><div class="sidebar-toc__title">目录</div><div class="sidebar-toc__progress"><span class="progress-notice">你已经读了</span><span class="progress-num">0</span><span class="progress-percentage">%</span><div class="sidebar-toc__progress-bar">     </div></div><div class="sidebar-toc__content"><ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#前言"><span class="toc-number">1.</span> <span class="toc-text">前言</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#前置知识"><span class="toc-number">2.</span> <span class="toc-text">前置知识</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#Web-Service-简介"><span class="toc-number">2.1.</span> <span class="toc-text">Web Service 简介</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#WSDL-基本结构及解析"><span class="toc-number">2.2.</span> <span class="toc-text">WSDL 基本结构及解析</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#definitions-元素"><span class="toc-number">2.2.1.</span> <span class="toc-text">definitions 元素</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#types-元素"><span class="toc-number">2.2.2.</span> <span class="toc-text">types 元素</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#message-元素"><span class="toc-number">2.2.3.</span> <span class="toc-text">message 元素</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#portType-元素"><span class="toc-number">2.2.4.</span> <span class="toc-text">portType 元素</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#binding-元素"><span class="toc-number">2.2.5.</span> <span class="toc-text">binding 元素</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#service-元素"><span class="toc-number">2.2.6.</span> <span class="toc-text">service 元素</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#手工构造-SOAP-请求包"><span class="toc-number">2.2.7.</span> <span class="toc-text">手工构造 SOAP 请求包</span></a></li></ol></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#挖掘过程简要记录"><span class="toc-number">3.</span> <span class="toc-text">挖掘过程简要记录</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#如何找到这些接口"><span class="toc-number">3.1.</span> <span class="toc-text">如何找到这些接口</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#接口安全之我见"><span class="toc-number">3.2.</span> <span class="toc-text">接口安全之我见</span></a></li></ol></li></ol></div></div></div><div id="body-wrap"><div id="web_bg" data-type="photo"></div><header class="post-bg" id="page-header" style="background-image: url(https://raw.githubusercontent.com/0x7b/CDN/master/img/20210122213800.png)"><nav id="nav"><span class="pull-left" id="blog_name"><a class="blog_title" id="site-name" href="/">0x7b's blog</a></span><span class="pull-right menus"><div id="search_button"><a class="site-page social-icon search"><i class="fas fa-search fa-fw"></i><span> 搜索</span></a></div><div class="menus_items"><div class="menus_item"><a class="site-page" href="/home/"><i class="fa-fw fa fa-home"></i><span> 主页</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fa fa-archive"></i><span> 时间轴</span></a></div><div class="menus_item"><a class="site-page"><i class="fa-fw fas fa-list"></i><span> 生活</span><i class="fas fa-chevron-down menus-expand"></i></a><ul class="menus_item_child"><li><a class="site-page" href="/bangumis/"><i class="fa-fw fab fa-youtube"></i><span> 番剧</span></a></li><li><a class="site-page" href="/movies/"><i class="fa-fw fa fa-film"></i><span> 电影</span></a></li><li><a class="site-page" href="/books/"><i class="fa-fw fas fa-book"></i><span> 书单</span></a></li><li><a class="site-page" href="/music/"><i class="fa-fw fa fa-music"></i><span> 音乐</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="/link/"><i class="fa-fw fa fa-link"></i><span> 友链</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fa fa-heart"></i><span> 关于我</span></a></div></div><span class="toggle-menu close"><a class="site-page"><i class="fas fa-bars fa-fw"></i></a></span></span></nav><div id="post-info"><div id="post-title"><div class="posttitle">CXF服务列表暴露引发的安全问题</div></div><div id="post-meta"><div class="meta-firstline"><time class="post-meta__date"><span class="post-meta__date-created" title="发表于 2021-01-16 00:00:00"><i class="far fa-calendar-alt fa-fw"></i> 发表于 2021-01-16</span><span class="post-meta__separator">|</span><span class="post-meta__date-updated" title="更新于 2021-01-22 00:00:00"><i class="fas fa-history fa-fw"></i> 更新于 2021-01-22</span></time><span class="post-meta__categories"><span class="post-meta__separator">|</span><i class="fas fa-inbox fa-fw post-meta__icon"></i><a class="post-meta__categories" href="/categories/%E6%B8%97%E9%80%8F%E6%B5%8B%E8%AF%95/">渗透测试</a></span></div><div class="meta-secondline"> <span class="post-meta-wordcount"><i class="far fa-file-word fa-fw post-meta__icon"></i><span>字数总计:</span><span class="word-count">3.4k</span><span class="post-meta__separator">|</span><i class="far fa-clock fa-fw post-meta__icon"></i><span>阅读时长: 13 分钟</span></span></div><div class="meta-thirdline"><span class="post-meta-pv-cv"><span class="post-meta__separator">|</span><i class="far fa-eye fa-fw post-meta__icon"></i><span>阅读量:</span><span id="busuanzi_value_page_pv"></span></span></div></div></div></header><main class="layout_post" id="content-inner"><article id="post"><div class="post-content" id="article-container"><h1 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h1><p>好大哥无聊在逛网站的时候意外发现了某厂商的 Server list，此服务文档中记录大量的 services。测试结果也不出所料发现了 N+1 的 SQL 注入、HQL 注入、未授权访问及 xxe 等漏洞打包。提交 SRC 之后也是拿到了不错的赏金，就决定写（shui）篇文章记录以下，同时学习一下关于 WebService 和接口安全的知识。</p>
+
+<head>
+  <meta charset="UTF-8">
+  <link rel="apple-touch-icon" sizes="76x76" href="/img/favicon.png">
+  <link rel="icon" type="image/png" href="/img/favicon.png">
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#2f4154">
+  <meta name="description" content="心如花木当向阳而生">
+  <meta name="author" content="0x7b">
+  <meta name="keywords" content="web安全,att&amp;ck,蓝军,攻防,渗透测试,安全研究,apt">
+  <title>CXF服务列表暴露引发的安全问题 - 0x7b&#39;s blog</title>
+
+  <link  rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.5.3/dist/css/bootstrap.min.css" />
+
+
+  <link  rel="stylesheet" href="https://cdn.jsdelivr.net/npm/github-markdown-css@4.0.0/github-markdown.min.css" />
+  <link  rel="stylesheet" href="/lib/hint/hint.min.css" />
+
+  
+    
+    
+      
+      <link  rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@10.4.0/styles/github-gist.min.css" />
+    
+  
+
+  
+    <link  rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.css" />
+  
+
+
+
+<!-- 主题依赖的图标库，不要自行修改 -->
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1749284_ba1fz6golrf.css">
+
+
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1736178_kmeydafke9r.css">
+
+
+<link  rel="stylesheet" href="/css/main.css" />
+
+<!-- 自定义样式保持在最底部 -->
+
+
+  <script id="fluid-configs">
+    var Fluid = window.Fluid || {};
+    var CONFIG = {"hostname":"www.0x7b.cn","root":"/","version":"1.8.7","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"right","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":3,"color":"#29d","options":{"showSpinner":false,"trickleSpeed":100}},"copy_btn":true,"image_zoom":{"enable":true},"toc":{"enable":true,"headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":1},"lazyload":{"enable":true,"onlypost":false},"web_analytics":{"enable":false,"baidu":"f6cc26bb9efdbbb57f32bbbe0a15b364","google":"G-SMJVP2PTHN","gtag":null,"tencent":{"sid":null,"cid":null},"woyaola":null,"cnzz":null,"leancloud":{"app_id":null,"app_key":null,"server_url":null}}};
+  </script>
+  <script  src="/js/utils.js" ></script>
+  <script  src="/js/color-schema.js" ></script>
+<meta name="generator" content="Hexo 4.2.1"></head>
+
+
+<body>
+  <header style="height: 70vh;">
+    <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand"
+       href="/">&nbsp;<strong>0x7b's blog</strong>&nbsp;</a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/">
+                <i class="iconfont icon-home-fill"></i>
+                首页
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/archives/">
+                <i class="iconfont icon-archive-fill"></i>
+                归档
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/categories/">
+                <i class="iconfont icon-category-fill"></i>
+                分类
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/tags/">
+                <i class="iconfont icon-tags-fill"></i>
+                标签
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/about/">
+                <i class="iconfont icon-user-fill"></i>
+                关于
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/links/">
+                <i class="iconfont icon-link-fill"></i>
+                友链
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item dropdown">
+              <a class="nav-link dropdown-toggle" href="#" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                <i class="iconfont icon-switch-fill"></i>
+                生活
+              </a>
+              <div class="dropdown-menu" aria-labelledby="navbarDropdown">
+                
+                  
+                  
+                  
+                  <a class="dropdown-item" href="/music/">
+                    <i class="iconfont icon-music"></i>
+                    我的音乐
+                  </a>
+                
+                  
+                  
+                  
+                  <a class="dropdown-item" href="/movies/">
+                    <i class="iconfont icon-youtube-fill"></i>
+                    看个电影
+                  </a>
+                
+                  
+                  
+                  
+                  <a class="dropdown-item" href="/bangumis/">
+                    <i class="iconfont icon-bilibili-fill"></i>
+                    番剧列表
+                  </a>
+                
+                  
+                  
+                  
+                  <a class="dropdown-item" href="/books/">
+                    <i class="iconfont icon-books"></i>
+                    书单推荐
+                  </a>
+                
+              </div>
+            </li>
+          
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" data-toggle="modal" data-target="#modalSearch">&nbsp;<i
+                class="iconfont icon-search"></i>&nbsp;</a>
+          </li>
+        
+        
+          <li class="nav-item" id="color-toggle-btn">
+            <a class="nav-link" href="javascript:">&nbsp;<i
+                class="iconfont icon-dark" id="color-toggle-icon"></i>&nbsp;</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+    <div class="banner" id="banner" parallax=true
+         style="background: url('/img/default.png') no-repeat center center;
+           background-size: cover;">
+      <div class="full-bg-img">
+        <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.3)">
+          <div class="page-header text-center fade-in-up">
+            <span class="h2" id="subtitle" title="CXF服务列表暴露引发的安全问题">
+              
+            </span>
+
+            
+              <div class="mt-3">
+  
+  
+    <span class="post-meta">
+      <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+      <time datetime="2021-01-16 00:00" pubdate>
+        2021年1月16日 凌晨
+      </time>
+    </span>
+  
+</div>
+
+<div class="mt-1">
+  
+    
+    <span class="post-meta mr-2">
+      <i class="iconfont icon-chart"></i>
+      3.4k 字
+    </span>
+  
+
+  
+    
+    <span class="post-meta mr-2">
+      <i class="iconfont icon-clock-fill"></i>
+      
+      
+      44
+       分钟
+    </span>
+  
+
+  
+  
+    
+      <!-- 不蒜子统计文章PV -->
+      <span id="busuanzi_container_page_pv" style="display: none">
+        <i class="iconfont icon-eye" aria-hidden="true"></i>
+        <span id="busuanzi_value_page_pv"></span> 次
+      </span>
+    
+  
+</div>
+
+            
+          </div>
+
+          
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid nopadding-x">
+  <div class="row nomargin-x">
+    <div class="d-none d-lg-block col-lg-2"></div>
+    <div class="col-lg-8 nopadding-x-md">
+      <div class="container nopadding-x-md" id="board-ctn">
+        <div class="py-5" id="board">
+          <article class="post-content mx-auto">
+            <!-- SEO header -->
+            <h1 style="display: none">CXF服务列表暴露引发的安全问题</h1>
+            
+              <p class="note note-info">
+                
+                  本文最后更新于：2021年1月22日 凌晨
+                
+              </p>
+            
+            <div class="markdown-body">
+              <h1 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h1><p>好大哥无聊在逛网站的时候意外发现了某厂商的 Server list，此服务文档中记录大量的 services。测试结果也不出所料发现了 N+1 的 SQL 注入、HQL 注入、未授权访问及 xxe 等漏洞打包。提交 SRC 之后也是拿到了不错的赏金，就决定写（shui）篇文章记录以下，同时学习一下关于 WebService 和接口安全的知识。</p>
 <h1 id="前置知识"><a href="#前置知识" class="headerlink" title="前置知识"></a>前置知识</h1><h2 id="Web-Service-简介"><a href="#Web-Service-简介" class="headerlink" title="Web Service 简介"></a>Web Service 简介</h2><p>Web Service 是一种跨语言和跨平台的<strong>远程调用(RPC)技术</strong>[使用网络调用其他网站资源]<br>主要分为两种：<br>一、SOAP 型 WebService</p>
 <blockquote>
 <p>SOAP（Simple Object Access Protocol，简单对象访问协议）使用 WSDL 描述服务，用于在 Web Service 中把远程调用和返回封装成机器可读的 XML 数据，定义了传输消息的规则或标准（在这个规则下发送方和接受方都能清楚的知道对方所要表达的意思）</p>
@@ -121,31 +317,31 @@ ga('send', 'pageview');
 <blockquote>
 <p>WADL 像是 WSDL 的 REST 版，用来描述 REST 接口。</p>
 </blockquote>
-<p>因为 WADL 的解析比较简单，由 base+path 定位资源路径，method 定义请求方法，request 元素中 param name 定义请求参数名和参数类型。需要注意的是 RESTful 型接口 GET 传单参直接用“/”拼接到资源路径后边而不用“?”，对于多参数一般用 post。这里给一张图帮助理解，后续不再过多介绍<br><img src= "/img/loading.gif" data-src="https://raw.githubusercontent.com/0x7b/CDN/master/img/20210122130214.png#align=left&display=inline&height=614&margin=%5Bobject%20Object%5D&originHeight=614&originWidth=1267&status=done&style=none&width=1267" alt=""></p>
+<p>因为 WADL 的解析比较简单，由 base+path 定位资源路径，method 定义请求方法，request 元素中 param name 定义请求参数名和参数类型。需要注意的是 RESTful 型接口 GET 传单参直接用“/”拼接到资源路径后边而不用“?”，对于多参数一般用 post。这里给一张图帮助理解，后续不再过多介绍<br><img src="https://raw.githubusercontent.com/0x7b/CDN/master/img/20210122130214.png#align=left&display=inline&height=614&margin=%5Bobject%20Object%5D&originHeight=614&originWidth=1267&status=done&style=none&width=1267" srcset="/img/loading.gif" alt=""></p>
 <h2 id="WSDL-基本结构及解析"><a href="#WSDL-基本结构及解析" class="headerlink" title="WSDL 基本结构及解析"></a>WSDL 基本结构及解析</h2><p>一个 WSDL 文档通常包含有以下元素 definitions、types、message、portType、binding、service 元素。</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">definitions - WSDL文档的根元素，用来提供命名空间</span><br><span class="line">types       - 数据类型(标签)定义的容器，里面使用schema定义了一些标签结构供message引用</span><br><span class="line">message     - 通信消息的数据结构的抽象类型化定义。引用types中定义的标签</span><br><span class="line">operation   - 对服务中所支持的操作的抽象描述，一个operation描述了一个访问入口的请求消息与响应消息对。</span><br><span class="line">portType    - 对于某个访问入口点类型所支持的操作的抽象集合，这些操作可以由一个或多个服务访问点来支持。</span><br><span class="line">binding     - 特定端口类型的具体协议和数据格式规范的绑定。</span><br><span class="line">service     - 相关服务访问点的集合</span><br><span class="line">port        - 定义为协议&#x2F;数据格式绑定与具体Web访问地址组合的单个服务访问点。</span><br></pre></td></tr></table></figure>
+<figure class="highlight routeros"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><code class="hljs routeros">definitions - WSDL文档的根元素，用来提供命名空间<br>types       - 数据类型(标签)定义的容器，里面使用schema定义了一些标签结构供message引用<br>message     - 通信消息的数据结构的抽象类型化定义。引用types中定义的标签<br>operation   - 对服务中所支持的操作的抽象描述，一个operation描述了一个访问入口的请求消息与响应消息对。<br>portType    - 对于某个访问入口点类型所支持的操作的抽象集合，这些操作可以由一个或多个服务访问点来支持。<br>binding     - 特定端口类型的具体协议和数据格式规范的绑定。<br>service     - 相关服务访问点的集合<br>port        - 定义为协议/数据格式绑定与具体Web访问地址组合的单个服务访问点。<br></code></pre></td></tr></table></figure>
 
-<p>以一个挖 SRC 进行信息收集时在某 HUB 发现的 SOAP Service 资产说明如何解析 WSDL<br><img src= "/img/loading.gif" data-src="https://raw.githubusercontent.com/0x7b/CDN/master/img/20210122130338.png#align=left&display=inline&height=529&margin=%5Bobject%20Object%5D&originHeight=529&originWidth=1049&status=done&style=none&width=1049" alt=""><br><img src= "/img/loading.gif" data-src="https://raw.githubusercontent.com/0x7b/CDN/master/img/20210122205912.png#align=left&display=inline&height=151&margin=%5Bobject%20Object%5D&name=&originHeight=151&originWidth=1620&status=done&style=none&width=1620" alt=""><br>服务列表描述了 CheckIdentityService 模块中的一个操作<br>访问其 WSDL 文档<a href="http://osms.xxx.com/osms/services/checkIdentityService?wsdl，给出了这个模块的binding和service元素，具体定义了Web服务实现使用的Internet协议、编码方案以及Internet地址" target="_blank" rel="noopener">http://osms.xxx.com/osms/services/checkIdentityService?wsdl，给出了这个模块的binding和service元素，具体定义了Web服务实现使用的Internet协议、编码方案以及Internet地址</a></p>
-<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">&lt;?xml version='1.0' encoding='UTF-8' ?&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">wsdl:definitions</span> <span class="attr">xmlns:xsd</span>=<span class="string">"http://www.w3.org/2001/XMLSchema"</span> <span class="attr">xmlns:wsdl</span>=<span class="string">"http://schemas.xmlsoap.org/wsdl/"</span> <span class="attr">xmlns:tns</span>=<span class="string">"http://impl.server.order.services.wbs.osms.xx.com/"</span> <span class="attr">xmlns:soap</span>=<span class="string">"http://schemas.xmlsoap.org/wsdl/soap/"</span> <span class="attr">xmlns:ns2</span>=<span class="string">"http://schemas.xmlsoap.org/soap/http"</span> <span class="attr">xmlns:ns1</span>=<span class="string">"http://server.order.services.wbs.osms.xx.com/"</span> <span class="attr">name</span>=<span class="string">"CheckIdentityServiceImplService"</span> <span class="attr">targetNamespace</span>=<span class="string">"http://impl.server.order.services.wbs.osms.xx.com/"</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">wsdl:import</span> <span class="attr">location</span>=<span class="string">"http://osms.xxx.com/osms/services/checkIdentityService?wsdl=CheckIdentityService.wsdl"</span> <span class="attr">namespace</span>=<span class="string">"http://server.order.services.wbs.osms.xx.com/"</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">wsdl:import</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">wsdl:binding</span> <span class="attr">name</span>=<span class="string">"CheckIdentityServiceImplServiceSoapBinding"</span> <span class="attr">type</span>=<span class="string">"ns1:CheckIdentityService"</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">soap:binding</span> <span class="attr">style</span>=<span class="string">"document"</span> <span class="attr">transport</span>=<span class="string">"http://schemas.xmlsoap.org/soap/http"</span> /&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">wsdl:operation</span> <span class="attr">name</span>=<span class="string">"checkIdentity"</span>&gt;</span></span><br><span class="line">            <span class="tag">&lt;<span class="name">soap:operation</span> <span class="attr">soapAction</span>=<span class="string">""</span> <span class="attr">style</span>=<span class="string">"document"</span> /&gt;</span></span><br><span class="line">            <span class="tag">&lt;<span class="name">wsdl:input</span> <span class="attr">name</span>=<span class="string">"checkIdentity"</span>&gt;</span></span><br><span class="line">                <span class="tag">&lt;<span class="name">soap:body</span> <span class="attr">use</span>=<span class="string">"literal"</span> /&gt;</span></span><br><span class="line">            <span class="tag">&lt;/<span class="name">wsdl:input</span>&gt;</span></span><br><span class="line">            <span class="tag">&lt;<span class="name">wsdl:output</span> <span class="attr">name</span>=<span class="string">"checkIdentityResponse"</span>&gt;</span></span><br><span class="line">                <span class="tag">&lt;<span class="name">soap:body</span> <span class="attr">use</span>=<span class="string">"literal"</span> /&gt;</span></span><br><span class="line">            <span class="tag">&lt;/<span class="name">wsdl:output</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;/<span class="name">wsdl:operation</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">wsdl:binding</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">wsdl:service</span> <span class="attr">name</span>=<span class="string">"CheckIdentityServiceImplService"</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">wsdl:port</span> <span class="attr">binding</span>=<span class="string">"tns:CheckIdentityServiceImplServiceSoapBinding"</span> <span class="attr">name</span>=<span class="string">"CheckIdentityServiceImplPort"</span>&gt;</span></span><br><span class="line">            <span class="tag">&lt;<span class="name">soap:address</span> <span class="attr">location</span>=<span class="string">"http://osms.xxx.com/osms/services/checkIdentityService"</span> /&gt;</span></span><br><span class="line">        <span class="tag">&lt;/<span class="name">wsdl:port</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">wsdl:service</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">wsdl:definitions</span>&gt;</span></span><br></pre></td></tr></table></figure>
+<p>以一个挖 SRC 进行信息收集时在某 HUB 发现的 SOAP Service 资产说明如何解析 WSDL<br><img src="https://raw.githubusercontent.com/0x7b/CDN/master/img/20210122130338.png#align=left&display=inline&height=529&margin=%5Bobject%20Object%5D&originHeight=529&originWidth=1049&status=done&style=none&width=1049" srcset="/img/loading.gif" alt=""><br><img src="https://raw.githubusercontent.com/0x7b/CDN/master/img/20210122205912.png#align=left&display=inline&height=151&margin=%5Bobject%20Object%5D&name=&originHeight=151&originWidth=1620&status=done&style=none&width=1620" srcset="/img/loading.gif" alt=""><br>服务列表描述了 CheckIdentityService 模块中的一个操作<br>访问其 WSDL 文档<a href="http://osms.xxx.com/osms/services/checkIdentityService?wsdl，给出了这个模块的binding和service元素，具体定义了Web服务实现使用的Internet协议、编码方案以及Internet地址" target="_blank" rel="noopener">http://osms.xxx.com/osms/services/checkIdentityService?wsdl，给出了这个模块的binding和service元素，具体定义了Web服务实现使用的Internet协议、编码方案以及Internet地址</a></p>
+<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><code class="hljs xml"><span class="hljs-meta">&lt;?xml version='1.0' encoding='UTF-8' ?&gt;</span><br><span class="hljs-tag">&lt;<span class="hljs-name">wsdl:definitions</span> <span class="hljs-attr">xmlns:xsd</span>=<span class="hljs-string">"http://www.w3.org/2001/XMLSchema"</span> <span class="hljs-attr">xmlns:wsdl</span>=<span class="hljs-string">"http://schemas.xmlsoap.org/wsdl/"</span> <span class="hljs-attr">xmlns:tns</span>=<span class="hljs-string">"http://impl.server.order.services.wbs.osms.xx.com/"</span> <span class="hljs-attr">xmlns:soap</span>=<span class="hljs-string">"http://schemas.xmlsoap.org/wsdl/soap/"</span> <span class="hljs-attr">xmlns:ns2</span>=<span class="hljs-string">"http://schemas.xmlsoap.org/soap/http"</span> <span class="hljs-attr">xmlns:ns1</span>=<span class="hljs-string">"http://server.order.services.wbs.osms.xx.com/"</span> <span class="hljs-attr">name</span>=<span class="hljs-string">"CheckIdentityServiceImplService"</span> <span class="hljs-attr">targetNamespace</span>=<span class="hljs-string">"http://impl.server.order.services.wbs.osms.xx.com/"</span>&gt;</span><br>    <span class="hljs-tag">&lt;<span class="hljs-name">wsdl:import</span> <span class="hljs-attr">location</span>=<span class="hljs-string">"http://osms.xxx.com/osms/services/checkIdentityService?wsdl=CheckIdentityService.wsdl"</span> <span class="hljs-attr">namespace</span>=<span class="hljs-string">"http://server.order.services.wbs.osms.xx.com/"</span>&gt;</span><br>    <span class="hljs-tag">&lt;/<span class="hljs-name">wsdl:import</span>&gt;</span><br>    <span class="hljs-tag">&lt;<span class="hljs-name">wsdl:binding</span> <span class="hljs-attr">name</span>=<span class="hljs-string">"CheckIdentityServiceImplServiceSoapBinding"</span> <span class="hljs-attr">type</span>=<span class="hljs-string">"ns1:CheckIdentityService"</span>&gt;</span><br>        <span class="hljs-tag">&lt;<span class="hljs-name">soap:binding</span> <span class="hljs-attr">style</span>=<span class="hljs-string">"document"</span> <span class="hljs-attr">transport</span>=<span class="hljs-string">"http://schemas.xmlsoap.org/soap/http"</span> /&gt;</span><br>        <span class="hljs-tag">&lt;<span class="hljs-name">wsdl:operation</span> <span class="hljs-attr">name</span>=<span class="hljs-string">"checkIdentity"</span>&gt;</span><br>            <span class="hljs-tag">&lt;<span class="hljs-name">soap:operation</span> <span class="hljs-attr">soapAction</span>=<span class="hljs-string">""</span> <span class="hljs-attr">style</span>=<span class="hljs-string">"document"</span> /&gt;</span><br>            <span class="hljs-tag">&lt;<span class="hljs-name">wsdl:input</span> <span class="hljs-attr">name</span>=<span class="hljs-string">"checkIdentity"</span>&gt;</span><br>                <span class="hljs-tag">&lt;<span class="hljs-name">soap:body</span> <span class="hljs-attr">use</span>=<span class="hljs-string">"literal"</span> /&gt;</span><br>            <span class="hljs-tag">&lt;/<span class="hljs-name">wsdl:input</span>&gt;</span><br>            <span class="hljs-tag">&lt;<span class="hljs-name">wsdl:output</span> <span class="hljs-attr">name</span>=<span class="hljs-string">"checkIdentityResponse"</span>&gt;</span><br>                <span class="hljs-tag">&lt;<span class="hljs-name">soap:body</span> <span class="hljs-attr">use</span>=<span class="hljs-string">"literal"</span> /&gt;</span><br>            <span class="hljs-tag">&lt;/<span class="hljs-name">wsdl:output</span>&gt;</span><br>        <span class="hljs-tag">&lt;/<span class="hljs-name">wsdl:operation</span>&gt;</span><br>    <span class="hljs-tag">&lt;/<span class="hljs-name">wsdl:binding</span>&gt;</span><br>    <span class="hljs-tag">&lt;<span class="hljs-name">wsdl:service</span> <span class="hljs-attr">name</span>=<span class="hljs-string">"CheckIdentityServiceImplService"</span>&gt;</span><br>        <span class="hljs-tag">&lt;<span class="hljs-name">wsdl:port</span> <span class="hljs-attr">binding</span>=<span class="hljs-string">"tns:CheckIdentityServiceImplServiceSoapBinding"</span> <span class="hljs-attr">name</span>=<span class="hljs-string">"CheckIdentityServiceImplPort"</span>&gt;</span><br>            <span class="hljs-tag">&lt;<span class="hljs-name">soap:address</span> <span class="hljs-attr">location</span>=<span class="hljs-string">"http://osms.xxx.com/osms/services/checkIdentityService"</span> /&gt;</span><br>        <span class="hljs-tag">&lt;/<span class="hljs-name">wsdl:port</span>&gt;</span><br>    <span class="hljs-tag">&lt;/<span class="hljs-name">wsdl:service</span>&gt;</span><br><span class="hljs-tag">&lt;/<span class="hljs-name">wsdl:definitions</span>&gt;</span><br></code></pre></td></tr></table></figure>
 
-<p><img src= "/img/loading.gif" data-src="https://raw.githubusercontent.com/0x7b/CDN/master/img/20210122211002.png#align=left&display=inline&height=191&margin=%5Bobject%20Object%5D&name=&originHeight=191&originWidth=1798&status=done&style=none&width=1798" alt=""><br>在 WSDL 文档的第三行导入了外部文档，使得整个 WSDL 文档元素完整起来。不直接将文档的每个元素写到一起而用这种导入的方法是工程模块化导致的结果<br>扯（ke）点（pu）题（yi）外（xia）话，绝对不是为了凑字数，真的！！！</p>
+<p><img src="https://raw.githubusercontent.com/0x7b/CDN/master/img/20210122211002.png#align=left&display=inline&height=191&margin=%5Bobject%20Object%5D&name=&originHeight=191&originWidth=1798&status=done&style=none&width=1798" srcset="/img/loading.gif" alt=""><br>在 WSDL 文档的第三行导入了外部文档，使得整个 WSDL 文档元素完整起来。不直接将文档的每个元素写到一起而用这种导入的方法是工程模块化导致的结果<br>扯（ke）点（pu）题（yi）外（xia）话，绝对不是为了凑字数，真的！！！</p>
 <blockquote>
 <p>模块化的优点： 1.便于多人协作开发，每个部分开发不会干扰其它地方 2.便于调试修改，因为模块独立，发现问题比较容易，修改一处，也不影响别处，利于前端性能优化 3.利于代码复用，小块的代码可以更方便拿到别的项目中不加或者稍加修改使用，提高可维护性 4.便于功能的扩充，因为软件各个部分是独立的，不需要理解整个软件就可以添加功能，特别适合二次开发。 5.解决了部分恼人的命名冲突以及烦琐的文件依赖<br>缺点： 1.系统分层，调用链会很长 2.模块间通信,模块间发送消息会很耗性能</p>
 </blockquote>
-<p>以下为 import 引入的外部文档<br><a href="http://osms.xxx.com/osms/services/checkIdentityService?wsdl=checkIdentityService" target="_blank" rel="noopener">http://osms.xxx.com/osms/services/checkIdentityService?wsdl=checkIdentityService</a><br><img src= "/img/loading.gif" data-src="https://raw.githubusercontent.com/0x7b/CDN/master/img/20210122211239.png#align=left&display=inline&height=324&margin=%5Bobject%20Object%5D&name=&originHeight=324&originWidth=1572&status=done&style=none&width=1572" alt=""></p>
-<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">&lt;?xml version='1.0' encoding='UTF-8' ?&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">wsdl:definitions</span> <span class="attr">xmlns:xsd</span>=<span class="string">"http://www.w3.org/2001/XMLSchema"</span> <span class="attr">xmlns:wsdl</span>=<span class="string">"http://schemas.xmlsoap.org/wsdl/"</span> <span class="attr">xmlns:ns1</span>=<span class="string">"http://server.order.services.wbs.osms.sf.com/"</span> <span class="attr">name</span>=<span class="string">"CheckIdentityService"</span> <span class="attr">targetNamespace</span>=<span class="string">"http://server.order.services.wbs.osms.xx.com/"</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">wsdl:types</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">xs:schema</span> <span class="attr">xmlns:xs</span>=<span class="string">"http://www.w3.org/2001/XMLSchema"</span> <span class="attr">xmlns:tns</span>=<span class="string">"http://server.order.services.wbs.osms.xx.com/"</span> <span class="attr">elementFormDefault</span>=<span class="string">"unqualified"</span> <span class="attr">targetNamespace</span>=<span class="string">"http://server.order.services.wbs.osms.xx.com/"</span> <span class="attr">version</span>=<span class="string">"1.0"</span>&gt;</span></span><br><span class="line"></span><br><span class="line">            <span class="tag">&lt;<span class="name">xs:element</span> <span class="attr">name</span>=<span class="string">"checkIdentity"</span> <span class="attr">type</span>=<span class="string">"tns:checkIdentity"</span> /&gt;</span></span><br><span class="line"></span><br><span class="line">            <span class="tag">&lt;<span class="name">xs:element</span> <span class="attr">name</span>=<span class="string">"checkIdentityResponse"</span> <span class="attr">type</span>=<span class="string">"tns:checkIdentityResponse"</span> /&gt;</span></span><br><span class="line"></span><br><span class="line">            <span class="tag">&lt;<span class="name">xs:complexType</span> <span class="attr">name</span>=<span class="string">"checkIdentity"</span>&gt;</span></span><br><span class="line">                <span class="tag">&lt;<span class="name">xs:sequence</span>&gt;</span></span><br><span class="line">                    <span class="tag">&lt;<span class="name">xs:element</span> <span class="attr">minOccurs</span>=<span class="string">"0"</span> <span class="attr">name</span>=<span class="string">"arg0"</span> <span class="attr">type</span>=<span class="string">"xs:string"</span> /&gt;</span></span><br><span class="line">                    <span class="tag">&lt;<span class="name">xs:element</span> <span class="attr">minOccurs</span>=<span class="string">"0"</span> <span class="attr">name</span>=<span class="string">"arg1"</span> <span class="attr">type</span>=<span class="string">"xs:string"</span> /&gt;</span></span><br><span class="line">                    <span class="tag">&lt;<span class="name">xs:element</span> <span class="attr">minOccurs</span>=<span class="string">"0"</span> <span class="attr">name</span>=<span class="string">"arg2"</span> <span class="attr">type</span>=<span class="string">"xs:string"</span> /&gt;</span></span><br><span class="line">                <span class="tag">&lt;/<span class="name">xs:sequence</span>&gt;</span></span><br><span class="line">            <span class="tag">&lt;/<span class="name">xs:complexType</span>&gt;</span></span><br><span class="line"></span><br><span class="line">            <span class="tag">&lt;<span class="name">xs:complexType</span> <span class="attr">name</span>=<span class="string">"checkIdentityResponse"</span>&gt;</span></span><br><span class="line">                <span class="tag">&lt;<span class="name">xs:sequence</span>&gt;</span></span><br><span class="line">                    <span class="tag">&lt;<span class="name">xs:element</span> <span class="attr">minOccurs</span>=<span class="string">"0"</span> <span class="attr">name</span>=<span class="string">"Return"</span> <span class="attr">type</span>=<span class="string">"xs:string"</span> /&gt;</span></span><br><span class="line">                <span class="tag">&lt;/<span class="name">xs:sequence</span>&gt;</span></span><br><span class="line">            <span class="tag">&lt;/<span class="name">xs:complexType</span>&gt;</span></span><br><span class="line"></span><br><span class="line">        <span class="tag">&lt;/<span class="name">xs:schema</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">wsdl:types</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">wsdl:message</span> <span class="attr">name</span>=<span class="string">"checkIdentityResponse"</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">wsdl:part</span> <span class="attr">element</span>=<span class="string">"ns1:checkIdentityResponse"</span> <span class="attr">name</span>=<span class="string">"parameters"</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;/<span class="name">wsdl:part</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">wsdl:message</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">wsdl:message</span> <span class="attr">name</span>=<span class="string">"checkIdentity"</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">wsdl:part</span> <span class="attr">element</span>=<span class="string">"ns1:checkIdentity"</span> <span class="attr">name</span>=<span class="string">"parameters"</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;/<span class="name">wsdl:part</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">wsdl:message</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">wsdl:portType</span> <span class="attr">name</span>=<span class="string">"CheckIdentityService"</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">wsdl:operation</span> <span class="attr">name</span>=<span class="string">"checkIdentity"</span>&gt;</span></span><br><span class="line">            <span class="tag">&lt;<span class="name">wsdl:input</span> <span class="attr">message</span>=<span class="string">"ns1:checkIdentity"</span> <span class="attr">name</span>=<span class="string">"checkIdentity"</span>&gt;</span></span><br><span class="line">            <span class="tag">&lt;/<span class="name">wsdl:input</span>&gt;</span></span><br><span class="line">            <span class="tag">&lt;<span class="name">wsdl:output</span> <span class="attr">message</span>=<span class="string">"ns1:checkIdentityResponse"</span> <span class="attr">name</span>=<span class="string">"checkIdentityResponse"</span>&gt;</span></span><br><span class="line">            <span class="tag">&lt;/<span class="name">wsdl:output</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;/<span class="name">wsdl:operation</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">wsdl:portType</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">wsdl:definitions</span>&gt;</span></span><br></pre></td></tr></table></figure>
+<p>以下为 import 引入的外部文档<br><a href="http://osms.xxx.com/osms/services/checkIdentityService?wsdl=checkIdentityService" target="_blank" rel="noopener">http://osms.xxx.com/osms/services/checkIdentityService?wsdl=checkIdentityService</a><br><img src="https://raw.githubusercontent.com/0x7b/CDN/master/img/20210122211239.png#align=left&display=inline&height=324&margin=%5Bobject%20Object%5D&name=&originHeight=324&originWidth=1572&status=done&style=none&width=1572" srcset="/img/loading.gif" alt=""></p>
+<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br></pre></td><td class="code"><pre><code class="hljs xml"><span class="hljs-meta">&lt;?xml version='1.0' encoding='UTF-8' ?&gt;</span><br><span class="hljs-tag">&lt;<span class="hljs-name">wsdl:definitions</span> <span class="hljs-attr">xmlns:xsd</span>=<span class="hljs-string">"http://www.w3.org/2001/XMLSchema"</span> <span class="hljs-attr">xmlns:wsdl</span>=<span class="hljs-string">"http://schemas.xmlsoap.org/wsdl/"</span> <span class="hljs-attr">xmlns:ns1</span>=<span class="hljs-string">"http://server.order.services.wbs.osms.sf.com/"</span> <span class="hljs-attr">name</span>=<span class="hljs-string">"CheckIdentityService"</span> <span class="hljs-attr">targetNamespace</span>=<span class="hljs-string">"http://server.order.services.wbs.osms.xx.com/"</span>&gt;</span><br>    <span class="hljs-tag">&lt;<span class="hljs-name">wsdl:types</span>&gt;</span><br>        <span class="hljs-tag">&lt;<span class="hljs-name">xs:schema</span> <span class="hljs-attr">xmlns:xs</span>=<span class="hljs-string">"http://www.w3.org/2001/XMLSchema"</span> <span class="hljs-attr">xmlns:tns</span>=<span class="hljs-string">"http://server.order.services.wbs.osms.xx.com/"</span> <span class="hljs-attr">elementFormDefault</span>=<span class="hljs-string">"unqualified"</span> <span class="hljs-attr">targetNamespace</span>=<span class="hljs-string">"http://server.order.services.wbs.osms.xx.com/"</span> <span class="hljs-attr">version</span>=<span class="hljs-string">"1.0"</span>&gt;</span><br><br>            <span class="hljs-tag">&lt;<span class="hljs-name">xs:element</span> <span class="hljs-attr">name</span>=<span class="hljs-string">"checkIdentity"</span> <span class="hljs-attr">type</span>=<span class="hljs-string">"tns:checkIdentity"</span> /&gt;</span><br><br>            <span class="hljs-tag">&lt;<span class="hljs-name">xs:element</span> <span class="hljs-attr">name</span>=<span class="hljs-string">"checkIdentityResponse"</span> <span class="hljs-attr">type</span>=<span class="hljs-string">"tns:checkIdentityResponse"</span> /&gt;</span><br><br>            <span class="hljs-tag">&lt;<span class="hljs-name">xs:complexType</span> <span class="hljs-attr">name</span>=<span class="hljs-string">"checkIdentity"</span>&gt;</span><br>                <span class="hljs-tag">&lt;<span class="hljs-name">xs:sequence</span>&gt;</span><br>                    <span class="hljs-tag">&lt;<span class="hljs-name">xs:element</span> <span class="hljs-attr">minOccurs</span>=<span class="hljs-string">"0"</span> <span class="hljs-attr">name</span>=<span class="hljs-string">"arg0"</span> <span class="hljs-attr">type</span>=<span class="hljs-string">"xs:string"</span> /&gt;</span><br>                    <span class="hljs-tag">&lt;<span class="hljs-name">xs:element</span> <span class="hljs-attr">minOccurs</span>=<span class="hljs-string">"0"</span> <span class="hljs-attr">name</span>=<span class="hljs-string">"arg1"</span> <span class="hljs-attr">type</span>=<span class="hljs-string">"xs:string"</span> /&gt;</span><br>                    <span class="hljs-tag">&lt;<span class="hljs-name">xs:element</span> <span class="hljs-attr">minOccurs</span>=<span class="hljs-string">"0"</span> <span class="hljs-attr">name</span>=<span class="hljs-string">"arg2"</span> <span class="hljs-attr">type</span>=<span class="hljs-string">"xs:string"</span> /&gt;</span><br>                <span class="hljs-tag">&lt;/<span class="hljs-name">xs:sequence</span>&gt;</span><br>            <span class="hljs-tag">&lt;/<span class="hljs-name">xs:complexType</span>&gt;</span><br><br>            <span class="hljs-tag">&lt;<span class="hljs-name">xs:complexType</span> <span class="hljs-attr">name</span>=<span class="hljs-string">"checkIdentityResponse"</span>&gt;</span><br>                <span class="hljs-tag">&lt;<span class="hljs-name">xs:sequence</span>&gt;</span><br>                    <span class="hljs-tag">&lt;<span class="hljs-name">xs:element</span> <span class="hljs-attr">minOccurs</span>=<span class="hljs-string">"0"</span> <span class="hljs-attr">name</span>=<span class="hljs-string">"Return"</span> <span class="hljs-attr">type</span>=<span class="hljs-string">"xs:string"</span> /&gt;</span><br>                <span class="hljs-tag">&lt;/<span class="hljs-name">xs:sequence</span>&gt;</span><br>            <span class="hljs-tag">&lt;/<span class="hljs-name">xs:complexType</span>&gt;</span><br><br>        <span class="hljs-tag">&lt;/<span class="hljs-name">xs:schema</span>&gt;</span><br>    <span class="hljs-tag">&lt;/<span class="hljs-name">wsdl:types</span>&gt;</span><br>    <span class="hljs-tag">&lt;<span class="hljs-name">wsdl:message</span> <span class="hljs-attr">name</span>=<span class="hljs-string">"checkIdentityResponse"</span>&gt;</span><br>        <span class="hljs-tag">&lt;<span class="hljs-name">wsdl:part</span> <span class="hljs-attr">element</span>=<span class="hljs-string">"ns1:checkIdentityResponse"</span> <span class="hljs-attr">name</span>=<span class="hljs-string">"parameters"</span>&gt;</span><br>        <span class="hljs-tag">&lt;/<span class="hljs-name">wsdl:part</span>&gt;</span><br>    <span class="hljs-tag">&lt;/<span class="hljs-name">wsdl:message</span>&gt;</span><br>    <span class="hljs-tag">&lt;<span class="hljs-name">wsdl:message</span> <span class="hljs-attr">name</span>=<span class="hljs-string">"checkIdentity"</span>&gt;</span><br>        <span class="hljs-tag">&lt;<span class="hljs-name">wsdl:part</span> <span class="hljs-attr">element</span>=<span class="hljs-string">"ns1:checkIdentity"</span> <span class="hljs-attr">name</span>=<span class="hljs-string">"parameters"</span>&gt;</span><br>        <span class="hljs-tag">&lt;/<span class="hljs-name">wsdl:part</span>&gt;</span><br>    <span class="hljs-tag">&lt;/<span class="hljs-name">wsdl:message</span>&gt;</span><br>    <span class="hljs-tag">&lt;<span class="hljs-name">wsdl:portType</span> <span class="hljs-attr">name</span>=<span class="hljs-string">"CheckIdentityService"</span>&gt;</span><br>        <span class="hljs-tag">&lt;<span class="hljs-name">wsdl:operation</span> <span class="hljs-attr">name</span>=<span class="hljs-string">"checkIdentity"</span>&gt;</span><br>            <span class="hljs-tag">&lt;<span class="hljs-name">wsdl:input</span> <span class="hljs-attr">message</span>=<span class="hljs-string">"ns1:checkIdentity"</span> <span class="hljs-attr">name</span>=<span class="hljs-string">"checkIdentity"</span>&gt;</span><br>            <span class="hljs-tag">&lt;/<span class="hljs-name">wsdl:input</span>&gt;</span><br>            <span class="hljs-tag">&lt;<span class="hljs-name">wsdl:output</span> <span class="hljs-attr">message</span>=<span class="hljs-string">"ns1:checkIdentityResponse"</span> <span class="hljs-attr">name</span>=<span class="hljs-string">"checkIdentityResponse"</span>&gt;</span><br>            <span class="hljs-tag">&lt;/<span class="hljs-name">wsdl:output</span>&gt;</span><br>        <span class="hljs-tag">&lt;/<span class="hljs-name">wsdl:operation</span>&gt;</span><br>    <span class="hljs-tag">&lt;/<span class="hljs-name">wsdl:portType</span>&gt;</span><br><span class="hljs-tag">&lt;/<span class="hljs-name">wsdl:definitions</span>&gt;</span><br></code></pre></td></tr></table></figure>
 
 <h3 id="definitions-元素"><a href="#definitions-元素" class="headerlink" title="definitions 元素"></a>definitions 元素</h3><p>这里不过多介绍，它是每个 WSDL 文档中的根元素，就用来提供命名空间的</p>
-<h3 id="types-元素"><a href="#types-元素" class="headerlink" title="types 元素"></a>types 元素</h3><p>数据类型(标签)定义的容器，里面使用 schema 定义了一些标签结构供 message 引用<br><img src= "/img/loading.gif" data-src="https://raw.githubusercontent.com/0x7b/CDN/master/img/20210122211938.png#align=left&display=inline&height=330&margin=%5Bobject%20Object%5D&name=&originHeight=330&originWidth=1855&status=done&style=none&width=1855" alt=""><br>上面是数据定义部分，该部分定义了两个元素，一个是 checkIdentity，一个是 checkIdentityResponse<br>       checkIdentity：定义了一个复杂类型，包含三个简单的字符串，将来用来描述操作的参数传入部分；<br>       checkIdentityResponse：定义了一个复杂类型，仅仅包含一个简单的字符串，将来用来描述操作的返回值；<br>        这里 checkIdentityResponse 是和 checkIdentity 相关的，checkIdentity 相对于一个方法，里面的 <code>name=&quot;arg0&quot; type=&quot;xs:string&quot;</code>是确定传入参数 arg 是 String 类型的，而 checkIdentityResponse 中的 <code>name=&quot;Return&quot; type=&quot;xs:string&quot;</code>是确定方法 checkIdentity（String name）的返回类型是 String 类型。</p>
-<h3 id="message-元素"><a href="#message-元素" class="headerlink" title="message 元素"></a>message 元素</h3><p>通信消息的数据结构的抽象化类型定义。引用 types 中定义的标签<br><img src= "/img/loading.gif" data-src="https://raw.githubusercontent.com/0x7b/CDN/master/img/20210122212054.png#align=left&display=inline&height=109&margin=%5Bobject%20Object%5D&name=&originHeight=109&originWidth=693&status=done&style=none&width=693" alt=""><br>该部分是消息格式的抽象定义：定义了两个消息 checkIdentityResponse 和 checkIdentity：<br>checkIdentity：checkIdentity 操作的请求消息格式，由一个消息片段组成，名字为 parameters，元素是我们前面定义的 types 中的元素；<br>checkIdentityResponse：checkIdentity 操作的响应消息格式，由一个消息片段组成，名字为 parameters，元素是我们前面定义的 types 中的元素；<br>　　如果采用 RPC 样式的消息传递，只需要将文档中的 element 元素修改为 type 即可。</p>
-<h3 id="portType-元素"><a href="#portType-元素" class="headerlink" title="portType 元素"></a>portType 元素</h3><p>portType 元素定义了 Web 服务的抽象接口。该接口有点类似 Java 的接口，都是定义了一个抽象类型和方法，没有定义实现。在 WDSL 中，portType 元素是由 binding 和 service 元素来实现的，这两个元素用来说明 Web 服务实现使用的 Internet 协议、编码方案以及 Internet 地址。<br>一个 portType 中可以定义多个 operation，一个 operation 可以看作是一个方法，本文中 WSDL 文档的定义：<br><img src= "/img/loading.gif" data-src="https://raw.githubusercontent.com/0x7b/CDN/master/img/20210122212124.png#align=left&display=inline&height=112&margin=%5Bobject%20Object%5D&name=&originHeight=112&originWidth=810&status=done&style=none&width=810" alt=""><br>portType 定义了服务调用模式的类型，这里包含一个 checkIdentity 方法，同时包含 input 和 output 表明该操作是一个请求/响应模式，请求消息是前面定义的 checkIdentity，响应消息是前面定义的 scheckIdentityResponse。input 表示传递到 Web 服务的有效负载，output 消息表示传递给客户的有效负载。</p>
-<h3 id="binding-元素"><a href="#binding-元素" class="headerlink" title="binding 元素"></a>binding 元素</h3><p>binding 元素将一个抽象 portType 映射到一组具体协议（SOAP 和 HTTP）、消息传递样式、编码样式。通常 binding 元素与协议专有的元素合在一起使用，本文中的例子：<br><img src= "/img/loading.gif" data-src="https://raw.githubusercontent.com/0x7b/CDN/master/img/20210122212149.png#align=left&display=inline&height=218&margin=%5Bobject%20Object%5D&name=&originHeight=218&originWidth=814&status=done&style=none&width=814" alt=""><br>binding 描述 Web Services 的通信协议。 <a href="soap:binding/">soap:binding/</a>描述使用 SOAP 协议，binding 还描述 Web Services 的方法、输入、输出。其描述了如何通过 SOAP/HTTP 来访问按照前面描述的访问入口点类型部署的访问入口。规定了在具体 SOAP 调用时，应当使用的 soapAction 是””。具体的使用需要参考特定协议定义的元素。</p>
-<h3 id="service-元素"><a href="#service-元素" class="headerlink" title="service 元素"></a>service 元素</h3><p>service 元素包含一个或者多个 port 元素，其中每个 port 元素表示一个不同的 Web 服务。<br><img src= "/img/loading.gif" data-src="https://raw.githubusercontent.com/0x7b/CDN/master/img/20210122212221.png#align=left&display=inline&height=94&margin=%5Bobject%20Object%5D&name=&originHeight=94&originWidth=887&status=done&style=none&width=887" alt=""><br>首先这里<code>service</code>标签描述了服务名称<code>CheckIdentityServiceImp1Service</code>,<code>port name</code>描述了可以支持 soap1.1 协议,然后提供了该服务的访问地址(EndPoint)。</p>
+<h3 id="types-元素"><a href="#types-元素" class="headerlink" title="types 元素"></a>types 元素</h3><p>数据类型(标签)定义的容器，里面使用 schema 定义了一些标签结构供 message 引用<br><img src="https://raw.githubusercontent.com/0x7b/CDN/master/img/20210122211938.png#align=left&display=inline&height=330&margin=%5Bobject%20Object%5D&name=&originHeight=330&originWidth=1855&status=done&style=none&width=1855" srcset="/img/loading.gif" alt=""><br>上面是数据定义部分，该部分定义了两个元素，一个是 checkIdentity，一个是 checkIdentityResponse<br>       checkIdentity：定义了一个复杂类型，包含三个简单的字符串，将来用来描述操作的参数传入部分；<br>       checkIdentityResponse：定义了一个复杂类型，仅仅包含一个简单的字符串，将来用来描述操作的返回值；<br>        这里 checkIdentityResponse 是和 checkIdentity 相关的，checkIdentity 相对于一个方法，里面的 <code>name=&quot;arg0&quot; type=&quot;xs:string&quot;</code>是确定传入参数 arg 是 String 类型的，而 checkIdentityResponse 中的 <code>name=&quot;Return&quot; type=&quot;xs:string&quot;</code>是确定方法 checkIdentity（String name）的返回类型是 String 类型。</p>
+<h3 id="message-元素"><a href="#message-元素" class="headerlink" title="message 元素"></a>message 元素</h3><p>通信消息的数据结构的抽象化类型定义。引用 types 中定义的标签<br><img src="https://raw.githubusercontent.com/0x7b/CDN/master/img/20210122212054.png#align=left&display=inline&height=109&margin=%5Bobject%20Object%5D&name=&originHeight=109&originWidth=693&status=done&style=none&width=693" srcset="/img/loading.gif" alt=""><br>该部分是消息格式的抽象定义：定义了两个消息 checkIdentityResponse 和 checkIdentity：<br>checkIdentity：checkIdentity 操作的请求消息格式，由一个消息片段组成，名字为 parameters，元素是我们前面定义的 types 中的元素；<br>checkIdentityResponse：checkIdentity 操作的响应消息格式，由一个消息片段组成，名字为 parameters，元素是我们前面定义的 types 中的元素；<br>　　如果采用 RPC 样式的消息传递，只需要将文档中的 element 元素修改为 type 即可。</p>
+<h3 id="portType-元素"><a href="#portType-元素" class="headerlink" title="portType 元素"></a>portType 元素</h3><p>portType 元素定义了 Web 服务的抽象接口。该接口有点类似 Java 的接口，都是定义了一个抽象类型和方法，没有定义实现。在 WDSL 中，portType 元素是由 binding 和 service 元素来实现的，这两个元素用来说明 Web 服务实现使用的 Internet 协议、编码方案以及 Internet 地址。<br>一个 portType 中可以定义多个 operation，一个 operation 可以看作是一个方法，本文中 WSDL 文档的定义：<br><img src="https://raw.githubusercontent.com/0x7b/CDN/master/img/20210122212124.png#align=left&display=inline&height=112&margin=%5Bobject%20Object%5D&name=&originHeight=112&originWidth=810&status=done&style=none&width=810" srcset="/img/loading.gif" alt=""><br>portType 定义了服务调用模式的类型，这里包含一个 checkIdentity 方法，同时包含 input 和 output 表明该操作是一个请求/响应模式，请求消息是前面定义的 checkIdentity，响应消息是前面定义的 scheckIdentityResponse。input 表示传递到 Web 服务的有效负载，output 消息表示传递给客户的有效负载。</p>
+<h3 id="binding-元素"><a href="#binding-元素" class="headerlink" title="binding 元素"></a>binding 元素</h3><p>binding 元素将一个抽象 portType 映射到一组具体协议（SOAP 和 HTTP）、消息传递样式、编码样式。通常 binding 元素与协议专有的元素合在一起使用，本文中的例子：<br><img src="https://raw.githubusercontent.com/0x7b/CDN/master/img/20210122212149.png#align=left&display=inline&height=218&margin=%5Bobject%20Object%5D&name=&originHeight=218&originWidth=814&status=done&style=none&width=814" srcset="/img/loading.gif" alt=""><br>binding 描述 Web Services 的通信协议。 <a href="soap:binding/">soap:binding/</a>描述使用 SOAP 协议，binding 还描述 Web Services 的方法、输入、输出。其描述了如何通过 SOAP/HTTP 来访问按照前面描述的访问入口点类型部署的访问入口。规定了在具体 SOAP 调用时，应当使用的 soapAction 是””。具体的使用需要参考特定协议定义的元素。</p>
+<h3 id="service-元素"><a href="#service-元素" class="headerlink" title="service 元素"></a>service 元素</h3><p>service 元素包含一个或者多个 port 元素，其中每个 port 元素表示一个不同的 Web 服务。<br><img src="https://raw.githubusercontent.com/0x7b/CDN/master/img/20210122212221.png#align=left&display=inline&height=94&margin=%5Bobject%20Object%5D&name=&originHeight=94&originWidth=887&status=done&style=none&width=887" srcset="/img/loading.gif" alt=""><br>首先这里<code>service</code>标签描述了服务名称<code>CheckIdentityServiceImp1Service</code>,<code>port name</code>描述了可以支持 soap1.1 协议,然后提供了该服务的访问地址(EndPoint)。</p>
 <h3 id="手工构造-SOAP-请求包"><a href="#手工构造-SOAP-请求包" class="headerlink" title="手工构造 SOAP 请求包"></a>手工构造 SOAP 请求包</h3><p>以 SOAP1.1 协议为例<br>PS：SOAP1.1 和 SOAP1.2 协议的区别移步<a href="https://www.cnblogs.com/yefengmeander/p/4176771.html" target="_blank" rel="noopener">https://www.cnblogs.com/yefengmeander/p/4176771.html</a><br>SOAP 协议请求的一般格式为</p>
-<figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">POST</span> <span class="string">/osms/services/checkIdentityService</span> HTTP/1.1</span><br><span class="line"><span class="attribute">Accept</span>: text/plain, */*; q=0.01</span><br><span class="line"><span class="attribute">User-Agent</span>: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.141 Safari/537.36</span><br><span class="line"><span class="attribute">X-Requested-With</span>: XMLHttpRequest</span><br><span class="line"><span class="attribute">Referer</span>: http://osms.xxx.com/osms/services/checkIdentityService?wsdl=CheckIdentityService.wsdl</span><br><span class="line"><span class="attribute">Accept-Language</span>: zh-CN,zh;q=0.9</span><br><span class="line"><span class="attribute">Cookie</span>: xxx=xxx</span><br><span class="line"><span class="attribute">Connection</span>: close</span><br><span class="line"><span class="attribute">SOAPAction:</span></span><br><span class="line"><span class="attribute">Content-Type</span>: text/xml;charset=UTF-8</span><br><span class="line"><span class="attribute">Host</span>: osms.xxx.com</span><br><span class="line"><span class="attribute">Content-Length</span>: 472</span><br><span class="line"></span><br><span class="line">&lt;?xml version="1.0"?&gt;</span><br><span class="line">&lt;soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:ser="http://server.order.services.wbs.osms.xx.com/"&gt;</span><br><span class="line">&lt;soapenv:Header&gt;</span><br><span class="line">...</span><br><span class="line">&lt;/soapenv:Header&gt;</span><br><span class="line">&lt;soapenv:Body&gt;</span><br><span class="line">...</span><br><span class="line">  &lt;soapenv:Fault&gt;</span><br><span class="line">  ...</span><br><span class="line">  &lt;/soapenv:Fault&gt;</span><br><span class="line">&lt;/soapenv:Body&gt;</span><br><span class="line">&lt;/soapenv:Envelope&gt;</span><br></pre></td></tr></table></figure>
+<figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><code class="hljs http"><span class="hljs-keyword">POST</span> <span class="hljs-string">/osms/services/checkIdentityService</span> HTTP/1.1<br><span class="hljs-attribute">Accept</span>: text/plain, */*; q=0.01<br><span class="hljs-attribute">User-Agent</span>: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.141 Safari/537.36<br><span class="hljs-attribute">X-Requested-With</span>: XMLHttpRequest<br><span class="hljs-attribute">Referer</span>: http://osms.xxx.com/osms/services/checkIdentityService?wsdl=CheckIdentityService.wsdl<br><span class="hljs-attribute">Accept-Language</span>: zh-CN,zh;q=0.9<br><span class="hljs-attribute">Cookie</span>: xxx=xxx<br><span class="hljs-attribute">Connection</span>: close<br><span class="hljs-attribute">SOAPAction:</span><br><span class="hljs-attribute">Content-Type</span>: text/xml;charset=UTF-8<br><span class="hljs-attribute">Host</span>: osms.xxx.com<br><span class="hljs-attribute">Content-Length</span>: 472<br><br>&lt;?xml version="1.0"?&gt;<br>&lt;soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:ser="http://server.order.services.wbs.osms.xx.com/"&gt;<br>&lt;soapenv:Header&gt;<br>...<br>&lt;/soapenv:Header&gt;<br>&lt;soapenv:Body&gt;<br>...<br>  &lt;soapenv:Fault&gt;<br>  ...<br>  &lt;/soapenv:Fault&gt;<br>&lt;/soapenv:Body&gt;<br>&lt;/soapenv:Envelope&gt;<br></code></pre></td></tr></table></figure>
 
-<p>一般我们构造的请求包需要改变的就是 Envelope 和 Body 部分，Header 部分默认不变，Fault 部分可缺省。其中<a href="soapenv:Envelope/">soapenv:Envelope/</a>定义了使用的命名空间和编码格式，Body 部分包含请求正文是我们真正需要关注的。<br>如下图根据 types 元素中 complexType 输入参数的描述将对应值填入 body 部分即可<br><img src= "/img/loading.gif" data-src="https://raw.githubusercontent.com/0x7b/CDN/master/img/20210122212246.png#align=left&display=inline&height=561&margin=%5Bobject%20Object%5D&name=&originHeight=561&originWidth=1202&status=done&style=none&width=1202" alt=""></p>
-<h1 id="挖掘过程简要记录"><a href="#挖掘过程简要记录" class="headerlink" title="挖掘过程简要记录"></a>挖掘过程简要记录</h1><p>首先拿到的是一个子域名 kbase.xxx.com<br>访问该域名，自动重定向到 main/login.jsp<br><img src= "/img/loading.gif" data-src="https://raw.githubusercontent.com/0x7b/CDN/master/img/20210122212306.png#align=left&display=inline&height=79&margin=%5Bobject%20Object%5D&name=&originHeight=79&originWidth=204&status=done&style=none&width=204" alt=""><br>直觉告诉我这个站有东西。首先看了下端口，JS 没什么可利用的东西，尝试扫目录<br><img src= "/img/loading.gif" data-src="https://raw.githubusercontent.com/0x7b/CDN/master/img/20210122133540.png#align=left&display=inline&height=983&margin=%5Bobject%20Object%5D&name=&originHeight=983&originWidth=1893&status=done&style=none&width=1893" alt=""><br>找到了一个 Apache CXF 的 Server list<br>用 burp 的 Wsdler 自动化解析 WSDL 生成接口请求示例，然后手工测试 WebService。测试过程和平常的测试过程基本一致只不过换了一种数据格式传递 payload，在这里是以 XML 形式进行漏洞探测<br>本文重点不是在挖掘漏洞上故对具体测试过程省略处理，随便上两张图撑撑场子<br><img src= "/img/loading.gif" data-src="https://raw.githubusercontent.com/0x7b/CDN/master/img/20210122212324.png#align=left&display=inline&height=714&margin=%5Bobject%20Object%5D&name=&originHeight=714&originWidth=922&status=done&style=none&width=922" alt=""><br><img src= "/img/loading.gif" data-src="https://raw.githubusercontent.com/0x7b/CDN/master/img/20210122212400.png#align=left&display=inline&height=583&margin=%5Bobject%20Object%5D&name=&originHeight=583&originWidth=1048&status=done&style=none&width=1048" alt=""><br><img src= "/img/loading.gif" data-src="https://raw.githubusercontent.com/0x7b/CDN/master/img/20210122212834.png#align=left&display=inline&height=843&margin=%5Bobject%20Object%5D&name=&originHeight=843&originWidth=1825&status=done&style=none&width=1825" alt=""><br>其实在 SOAP service 形式下存在的漏洞远不止这些，还可能存在任意文件读取、越权/未授权、远程代码执行、逻辑漏洞、注入漏洞、DOS 漏洞等具体要看后端 Web Method 的具体实现。<br>总结一下就是通过扫目录也可以是列目录漏洞等其他一些信息收集方法，找到一些接口，然后根据接口名定义和参数类型定义选择合适的攻击向量模糊测试。</p>
+<p>一般我们构造的请求包需要改变的就是 Envelope 和 Body 部分，Header 部分默认不变，Fault 部分可缺省。其中<a href="soapenv:Envelope/">soapenv:Envelope/</a>定义了使用的命名空间和编码格式，Body 部分包含请求正文是我们真正需要关注的。<br>如下图根据 types 元素中 complexType 输入参数的描述将对应值填入 body 部分即可<br><img src="https://raw.githubusercontent.com/0x7b/CDN/master/img/20210122212246.png#align=left&display=inline&height=561&margin=%5Bobject%20Object%5D&name=&originHeight=561&originWidth=1202&status=done&style=none&width=1202" srcset="/img/loading.gif" alt=""></p>
+<h1 id="挖掘过程简要记录"><a href="#挖掘过程简要记录" class="headerlink" title="挖掘过程简要记录"></a>挖掘过程简要记录</h1><p>首先拿到的是一个子域名 kbase.xxx.com<br>访问该域名，自动重定向到 main/login.jsp<br><img src="https://raw.githubusercontent.com/0x7b/CDN/master/img/20210122212306.png#align=left&display=inline&height=79&margin=%5Bobject%20Object%5D&name=&originHeight=79&originWidth=204&status=done&style=none&width=204" srcset="/img/loading.gif" alt=""><br>直觉告诉我这个站有东西。首先看了下端口，JS 没什么可利用的东西，尝试扫目录<br><img src="https://raw.githubusercontent.com/0x7b/CDN/master/img/20210122133540.png#align=left&display=inline&height=983&margin=%5Bobject%20Object%5D&name=&originHeight=983&originWidth=1893&status=done&style=none&width=1893" srcset="/img/loading.gif" alt=""><br>找到了一个 Apache CXF 的 Server list<br>用 burp 的 Wsdler 自动化解析 WSDL 生成接口请求示例，然后手工测试 WebService。测试过程和平常的测试过程基本一致只不过换了一种数据格式传递 payload，在这里是以 XML 形式进行漏洞探测<br>本文重点不是在挖掘漏洞上故对具体测试过程省略处理，随便上两张图撑撑场子<br><img src="https://raw.githubusercontent.com/0x7b/CDN/master/img/20210122212324.png#align=left&display=inline&height=714&margin=%5Bobject%20Object%5D&name=&originHeight=714&originWidth=922&status=done&style=none&width=922" srcset="/img/loading.gif" alt=""><br><img src="https://raw.githubusercontent.com/0x7b/CDN/master/img/20210122212400.png#align=left&display=inline&height=583&margin=%5Bobject%20Object%5D&name=&originHeight=583&originWidth=1048&status=done&style=none&width=1048" srcset="/img/loading.gif" alt=""><br><img src="https://raw.githubusercontent.com/0x7b/CDN/master/img/20210122212834.png#align=left&display=inline&height=843&margin=%5Bobject%20Object%5D&name=&originHeight=843&originWidth=1825&status=done&style=none&width=1825" srcset="/img/loading.gif" alt=""><br>其实在 SOAP service 形式下存在的漏洞远不止这些，还可能存在任意文件读取、越权/未授权、远程代码执行、逻辑漏洞、注入漏洞、DOS 漏洞等具体要看后端 Web Method 的具体实现。<br>总结一下就是通过扫目录也可以是列目录漏洞等其他一些信息收集方法，找到一些接口，然后根据接口名定义和参数类型定义选择合适的攻击向量模糊测试。</p>
 <h2 id="如何找到这些接口"><a href="#如何找到这些接口" class="headerlink" title="如何找到这些接口"></a>如何找到这些接口</h2><ol>
 <li>搜索引擎搜索，包括但不限于 Google hacking、Fofa、Github 等</li>
 <li>通过流量代理软件，正则匹配日志中有关接口的数据包</li>
@@ -160,86 +356,284 @@ ga('send', 'pageview');
 <li>按照安全规范开发接口</li>
 </ol>
 <p>参考链接<br><a href="https://www.cnblogs.com/susanhonly/p/11929195.html" target="_blank" rel="noopener">https://www.cnblogs.com/susanhonly/p/11929195.html</a><br><a href="https://xz.aliyun.com/t/7541" target="_blank" rel="noopener">https://xz.aliyun.com/t/7541</a><br><a href="https://www.anquanke.com/post/id/85910" target="_blank" rel="noopener">https://www.anquanke.com/post/id/85910</a><br><a href="https://www.cnblogs.com/zhaozhan/archive/2010/11/03/1868556.html" target="_blank" rel="noopener">https://www.cnblogs.com/zhaozhan/archive/2010/11/03/1868556.html</a></p>
-</div><div class="post-copyright"><div class="post-copyright__author"><span class="post-copyright-meta">文章作者: </span><span class="post-copyright-info"><a href="mailto:linsbjl@gmail.com">怎么PWN不了</a></span></div><div class="post-copyright__type"><span class="post-copyright-meta">文章链接: </span><span class="post-copyright-info"><a href="https://www.0x7b.cn/posts/1222/">https://www.0x7b.cn/posts/1222/</a></span></div><div class="post-copyright__notice"><span class="post-copyright-meta">版权声明: </span><span class="post-copyright-info">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a> 许可协议。转载请注明来自 <a href="https://www.0x7b.cn" target="_blank">0x7b's blog</a>！</span></div></div><div class="tag_share"><div class="post-meta__tag-list"><a class="post-meta__tags" href="/tags/WebService/">WebService</a><a class="post-meta__tags" href="/tags/%E6%8E%A5%E5%8F%A3%E5%AE%89%E5%85%A8/">接口安全</a><a class="post-meta__tags" href="/tags/CXF-Server-list/">CXF Server list</a></div><div class="post_share"><div class="social-share" data-image="https://raw.githubusercontent.com/0x7b/CDN/master/img/20210122213800.png" data-sites="facebook,twitter,wechat,weibo,qq"></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/social-share.js/dist/css/share.min.css"/><script src="https://cdn.jsdelivr.net/npm/social-share.js/dist/js/social-share.min.js"></script></div></div><nav class="pagination-post" id="pagination"><div class="next-post pull-full"><a href="/posts/1221/"><img class="next-cover" data-src="https://cdn.jsdelivr.net/gh/0x7b/CDN/img/20201224162355.png" onerror="onerror=null;src='/img/404.jpg'"><div class="pagination-info"><div class="label">下一篇</div><div class="next_info">CDN下访问源站ERR_TOO_MANY_REDIRECTS</div></div></a></div></nav><hr><div id="post-comment"><div class="comment-head"><div class="comment-headling"><i class="fas fa-comments fa-fw"></i><span> 评论</span></div><div class="comment-switch"><span class="first-comment">Valine</span><label><input id="switch-comments-btn" type="checkbox"><span class="slider"></span></label><span class="second-comment">Gitalk</span></div></div><div class="comment-wrap"><div class="comments-items-1" data-name="Valine"><div class="vcomment" id="vcomment"></div><script>function loadvaline () {  
-  var requestSetting = function (from,set) {
-    var from = from
-    var setting = set.split(',').filter(function(item){
-    return from.indexOf(item) > -1
+
+            </div>
+            <hr>
+            <div>
+              <div class="post-metas mb-3">
+                
+                  <div class="post-meta mr-3">
+                    <i class="iconfont icon-category"></i>
+                    
+                      <a class="hover-with-bg" href="/categories/%E6%B8%97%E9%80%8F%E6%B5%8B%E8%AF%95/">渗透测试</a>
+                    
+                  </div>
+                
+                
+                  <div class="post-meta">
+                    <i class="iconfont icon-tags"></i>
+                    
+                      <a class="hover-with-bg" href="/tags/WebService/">WebService</a>
+                    
+                      <a class="hover-with-bg" href="/tags/%E6%8E%A5%E5%8F%A3%E5%AE%89%E5%85%A8/">接口安全</a>
+                    
+                      <a class="hover-with-bg" href="/tags/CXF-Server-list/">CXF Server list</a>
+                    
+                  </div>
+                
+              </div>
+              
+                <p class="note note-warning">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-sa/4.0/deed.zh" target="_blank" rel="nofollow noopener noopener">CC BY-SA 4.0 协议</a> ，转载请注明出处！</p>
+              
+              
+                <div class="post-prevnext">
+                  <article class="post-prev col-6">
+                    
+                    
+                  </article>
+                  <article class="post-next col-6">
+                    
+                    
+                      <a href="/posts/1221/">
+                        <span class="hidden-mobile">CDN下访问源站ERR_TOO_MANY_REDIRECTS</span>
+                        <span class="visible-mobile">下一篇</span>
+                        <i class="iconfont icon-arrowright"></i>
+                      </a>
+                    
+                  </article>
+                </div>
+              
+            </div>
+
+            
+              <!-- Comments -->
+              <article class="comments" id="comments">
+                
+                
+  <div id="vcomments"></div>
+  <script type="text/javascript">
+    Fluid.utils.waitElementVisible('vcomments', function() {
+      Fluid.utils.createScript('https://cdn.jsdelivr.net/npm/valine@1.4.14/dist/Valine.min.js', function () {
+        new Valine({
+          el: "#vcomments",
+          app_id: "rfUhxvYqe550TVAGj4qMLB3i-gzGzoHsz",
+          app_key: "20s0nDXQlst20ih5nT0peGH9",
+          placeholder: "说点什么",
+          path: window.location.pathname,
+          avatar: "",
+          meta: ["nick","mail","link"],
+          pageSize: "10",
+          lang: "zh-CN",
+          highlight: false,
+          recordIP: true,
+          serverURLs: "",
+        });
+      });
     });
-    setting = setting.length == 0 ? from :setting;
-    return setting
-  }
+  </script>
+  <noscript>Please enable JavaScript to view the
+    <a href="https://valine.js.org" target="_blank" rel="nofollow noopener noopener">comments powered by Valine.</a>
+  </noscript>
 
-  var guestInfo = requestSetting(['nick','mail','link'],'nick,mail,link')
-  var requiredFields = requestSetting(['nick','mail'],'nick,mail')
 
-  function initValine () {
-    window.valine = new Valine({
-      el:'#vcomment',
-      appId: 'rfUhxvYqe550TVAGj4qMLB3i-gzGzoHsz',
-      appKey: '20s0nDXQlst20ih5nT0peGH9',
-      placeholder: 'Please leave your footprints',
-      avatar: 'monsterid',
-      meta: guestInfo,
-      pageSize: '10',
-      lang: 'zh-CN',
-      recordIP: true,
-      serverURLs: '',
-      emojiCDN: '',
-      emojiMaps: "",
-      enableQQ: true,
-      requiredFields: requiredFields
-    });
-  }
-  loadScript('https://cdn.jsdelivr.net/npm/valine/dist/Valine.min.js', initValine)
-}
+              </article>
+            
+          </article>
+        </div>
+      </div>
+    </div>
+    
+      <div class="d-none d-lg-block col-lg-2 toc-container" id="toc-ctn">
+        <div id="toc">
+  <p class="toc-header"><i class="iconfont icon-list"></i>&nbsp;目录</p>
+  <div class="toc-body" id="toc-body"></div>
+</div>
 
-if ('Valine' === 'Valine' || false) {
-  window.addEventListener('load', loadvaline)
-}
-else {
-  function loadOtherComment () {
-    loadvaline()
-  }
-}</script></div><div class="comments-items-2" data-name="Gitalk"><div id="gitalk-container"></div><script src="https://cdn.jsdelivr.net/npm/blueimp-md5/js/md5.min.js"></script><script>function loadGitalk () {
-  const ele = document.createElement('link')
-  ele.rel = 'stylesheet'
-  ele.href= 'https://cdn.jsdelivr.net/npm/gitalk/dist/gitalk.min.css'
-  document.getElementsByTagName('head')[0].appendChild(ele)
+      </div>
+    
+  </div>
+</div>
 
-  loadScript('https://cdn.jsdelivr.net/npm/gitalk@latest/dist/gitalk.min.js', function () {
-    var gitalk = new Gitalk({
-      clientID: '18cec62cc76f4dcdf9c7',
-      clientSecret: '215ae76c4f73a434a6ad0a403a52b12565291e6c',
-      repo: '0x7b.github.io',
-      owner: '0x7b',
-      admin: ['0x7b'],
-      id: md5(decodeURI(location.pathname)),
-      language: 'zh-CN',
-      perPage: 10,
-      distractionFreeMode: false,
-      pagerDirection: 'last',
-      createIssueManually: false,
-      updateCountCallback: commentCount
+<!-- Custom -->
+
+
+    
+
+    
+      <a id="scroll-top-button" href="#" role="button">
+        <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+      </a>
+    
+
+    
+      <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v"
+                 for="local-search-input">关键词</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+
+    
+  </main>
+
+  <footer class="text-center mt-5 py-3">
+  <div class="footer-content">
+    
+  </div>
+  
+  <div class="statistics">
+    
+    
+
+    
+      
+        <!-- 不蒜子统计PV -->
+        <span id="busuanzi_container_site_pv" style="display: none">
+            总访问量 
+            <span id="busuanzi_value_site_pv"></span>
+             次
+          </span>
+      
+      
+        <!-- 不蒜子统计UV -->
+        <span id="busuanzi_container_site_uv" style="display: none">
+            总访客数 
+            <span id="busuanzi_value_site_uv"></span>
+             人
+          </span>
+      
+    
+  </div>
+
+
+  
+  <!-- 备案信息 -->
+  <div class="beian">
+    <span>
+      <a href="http://beian.miit.gov.cn/" target="_blank" rel="nofollow noopener">
+        <img src="/img/police_beian.png" srcset="/img/loading.gif">陕ICP备2020018798号-1
+      </a>
+    </span>
+    
+  </div>
+
+
+  
+</footer>
+
+<!-- SCRIPTS -->
+
+  <script  src="https://cdn.jsdelivr.net/npm/nprogress@0.2.0/nprogress.min.js" ></script>
+  <link  rel="stylesheet" href="https://cdn.jsdelivr.net/npm/nprogress@0.2.0/nprogress.min.css" />
+
+  <script>
+    NProgress.configure({"showSpinner":false,"trickleSpeed":100})
+    NProgress.start()
+    window.addEventListener('load', function() {
+      NProgress.done();
     })
-    gitalk.render('gitalk-container')
-  })
+  </script>
 
-  function commentCount(n){
-    try {
-      document.getElementsByClassName('gitalk-comment-count')[0].innerHTML= n
-    } catch (e) {
-      return false
-    }
-  }
-}
 
-if ('Valine' === 'Gitalk' || false) {
-  window.addEventListener('load', loadGitalk)
-}
-else {
-  function loadOtherComment () {
-    loadGitalk()
-  }
-}</script></div></div></div></article></main><footer id="footer" data-type="color"><div id="footer-wrap"><div class="copyright">&copy;2020 - 2021  <i id="heartbeat" class="fa fas fa-heartbeat"></i> 怎么PWN不了</div><div class="framework-info"><span>驱动 </span><a href="https://hexo.io" target="_blank" rel="noopener"><span>Hexo</span></a><span class="footer-separator">|</span><span>主题 </span><a href="https://github.com/jerryc127/hexo-theme-butterfly" target="_blank" rel="noopener"><span>Butterfly</span></a></div><div class="icp"><a href="http://beian.miit.gov.cn/" target="_blank" rel="noopener"><img class="icp-icon" src="/img/icp.png"/><span>陕ICP备2020018798号-1</span></a></div></div><head><link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/HCLonely/images@master/others/heartbeat.min.css"><meta name="generator" content="Hexo 4.2.1"></head></footer></div><section id="rightside"><div id="rightside-config-hide"><button id="readmode" type="button" title="阅读模式"><i class="fas fa-book-open"></i></button><button id="font_plus" type="button" title="放大字体"><i class="fas fa-plus"></i></button><button id="font_minus" type="button" title="缩小字体"><i class="fas fa-minus"></i></button><button id="translateLink" type="button" title="简繁转换">繁</button><button id="darkmode" type="button" title="浅色和深色模式转换"><i class="fas fa-adjust"></i></button></div><div id="rightside-config-show"><button id="rightside_config" type="button" title="设置"><i class="fas fa-cog"></i></button><a id="to_comment" href="#post-comment" title="直达评论"><i class="fas fa-comments"></i></a><button class="close" id="mobile-toc-button" type="button" title="目录"><i class="fas fa-list-ul"></i></button><button id="go-up" type="button" title="回到顶部"><i class="fas fa-arrow-up"></i></button></div></section><div class="search-dialog" id="local-search"><div class="search-dialog__title" id="local-search-title">本地搜索</div><div id="local-input-panel"><div id="local-search-input"><div class="local-search-box"><input class="local-search-box--input" placeholder="搜索文章" type="text"/></div></div></div><hr/><div id="local-search-results"><div id="local-hits"></div><div id="local-stats"><div class="local-search-stats__hr" id="hr"><span>由</span> <a href="https://github.com/wzpan/hexo-generator-search" target="_blank" rel="noopener" style="color:#49B1F5;">hexo-generator-search</a>
- <span>提供支持</span></div></div></div><span class="search-close-button"><i class="fas fa-times"></i></span></div><div class="search-mask"></div><script src="https://cdn.jsdelivr.net/npm/jquery@latest/dist/jquery.min.js"></script><script src="/js/utils.js"></script><script src="/js/main.js"></script><script src="/js/tw_cn.js"></script><script src="https://cdn.jsdelivr.net/npm/medium-zoom/dist/medium-zoom.min.js"></script><script src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@latest/dist/jquery.fancybox.min.js"></script><script src="https://cdn.jsdelivr.net/npm/node-snackbar/dist/snackbar.min.js"></script><script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script><script src="https://cdn.jsdelivr.net/npm/instant.page/instantpage.min.js" type="module" defer></script><script src="https://cdn.jsdelivr.net/npm/vanilla-lazyload/dist/lazyload.iife.min.js" async></script><script src="/js/search/local-search.js"></script><script src="/js/calendar.js"></script><script src="/js/languages.js"></script><script src="/live2dw/lib/L2Dwidget.min.js?094cbace49a39548bed64abff5988b05"></script><script>L2Dwidget.init({"model":{"jsonPath":"/live2dw/assets/haruto.model.json"},"display":{"position":"right","width":120,"height":260},"mobile":{"show":false},"log":false,"pluginJsPath":"lib/","pluginModelPath":"assets/","pluginRootPath":"live2dw/","tagMode":false});</script></body></html>
+<script  src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.min.js" ></script>
+<script  src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.3/dist/js/bootstrap.min.js" ></script>
+<script  src="/js/debouncer.js" ></script>
+<script  src="/js/events.js" ></script>
+<script  src="/js/plugins.js" ></script>
+
+<!-- Plugins -->
+
+
+  
+    <script  src="/js/lazyload.js" ></script>
+  
+
+
+
+  
+
+
+
+  <script  src="https://cdn.jsdelivr.net/npm/tocbot@4.12.0/dist/tocbot.min.js" ></script>
+
+
+
+  <script  src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.js" ></script>
+
+
+
+  <script  src="https://cdn.jsdelivr.net/npm/anchor-js@4.3.0/anchor.min.js" ></script>
+
+
+
+  <script defer src="https://cdn.jsdelivr.net/npm/clipboard@2.0.6/dist/clipboard.min.js" ></script>
+
+
+
+  <script defer src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js" ></script>
+
+
+
+
+  <script  src="https://cdn.jsdelivr.net/npm/typed.js@2.0.11/lib/typed.min.js" ></script>
+  <script>
+    (function (window, document) {
+      var typing = Fluid.plugins.typing;
+      var title = document.getElementById('subtitle').title;
+      
+      typing(title)
+      
+    })(window, document);
+  </script>
+
+
+
+  <script  src="/js/local-search.js" ></script>
+  <script>
+    (function () {
+      var path = "/local-search.xml";
+      var inputArea = document.querySelector("#local-search-input");
+      inputArea.onclick = function () {
+        searchFunc(path, 'local-search-input', 'local-search-result');
+        this.onclick = null
+      }
+    })()
+  </script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!-- 主题的启动项 保持在最底部 -->
+<script  src="/js/boot.js" ></script>
+
+
+
+<script src="/live2dw/lib/L2Dwidget.min.js?094cbace49a39548bed64abff5988b05"></script><script>L2Dwidget.init({"model":{"jsonPath":"/live2dw/assets/wanko.model.json"},"display":{"position":"right","width":180,"height":300},"mobile":{"show":false},"log":false,"pluginJsPath":"lib/","pluginModelPath":"assets/","pluginRootPath":"live2dw/","tagMode":false});</script></body>
+</html>
