@@ -2,7 +2,7 @@
 <search>
   <entry>
     <title>CDN下访问源站ERR_TOO_MANY_REDIRECTS</title>
-    <url>/posts/1221/</url>
+    <url>/posts/1002/</url>
     <content><![CDATA[<h1 id="问题描述"><a href="#问题描述" class="headerlink" title="问题描述"></a>问题描述</h1><p>源站（GitHub pages）使用了 CDN，浏览器访问提示重定向过多</p>
 <figure class="highlight css"><table><tr><td class="code"><pre><code class="hljs css"><span class="hljs-selector-tag">XXX</span><span class="hljs-selector-class">.XXX</span><span class="hljs-selector-class">.XXX</span> 将您重定向的次数过多。<br>尝试清除 <span class="hljs-selector-tag">Cookie</span>.<br><span class="hljs-selector-tag">ERR_TOO_MANY_REDIRECTS</span><br></code></pre></td></tr></table></figure>
 
