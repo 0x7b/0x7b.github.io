@@ -58,11 +58,11 @@
   
   
   <entry>
-    <title>语雀Front-matter-demo</title>
-    <link href="/posts/1223/"/>
-    <url>/posts/1223/</url>
+    <title>语雀Front-matter-demo for Fluid</title>
+    <link href="/posts/1001/"/>
+    <url>/posts/1001/</url>
     
-    <content type="html"><![CDATA[<p>这是一个模板,方便在语雀中快速编写符合 Yuque-Hexo 语法得文章,按照该模板即可保证文章格式。</p><figure class="highlight markdown"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><code class="hljs markdown">---<br>title: 语雀Front-matter-demo<br>cover:<br>sticky: 2<br>date: 2020-12-21<br>updated:<br>tags: [BUGs]<br>categories: [博客维护]<br>keywords: "重定向,ERROR,CDN,REDIRECTS"<br>toc: True<br>abbrlink:<br>description: 这是一个模板,方便在语雀中快速编写符合Yuque-Hexo语法得文章,按照该模板即可保证文章格式。<br>---<br></code></pre></td></tr></table></figure><p>引入外部图片测试（语雀）<br><a href="https://cdn.jsdelivr.net/gh/0x7b/CDN/img/65033404_p0.jpg" target="_blank" rel="noopener"><img src="https://cdn.nlark.com/yuque/0/2020/jpeg/8398873/1608800119701-0aee20c6-8ea4-4ca2-959d-55ad5078c77c.jpeg#align=left&display=inline&height=1414&margin=%5Bobject%20Object%5D&originHeight=1414&originWidth=2000&size=0&status=done&style=none&width=2000" srcset="/img/loading.gif" alt=""></a><br>目前看来还是会受防盗链的影响，<br><a href="https://github.com/x-cold/yuque-hexo/issues/41" target="_blank" rel="noopener">解决办法</a></p><figure class="highlight html"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs html"><span class="hljs-tag">&lt;<span class="hljs-name">meta</span> <span class="hljs-attr">name</span>=<span class="hljs-string">"referrer"</span> <span class="hljs-attr">content</span>=<span class="hljs-string">"no-referrer"</span> /&gt;</span><br></code></pre></td></tr></table></figure><p>可直接在语雀中添加，即可为这篇文章 no-referrer 属性<br>但这个解决方法也具有局限性：只能在 Chrome 浏览器中生效</p>]]></content>
+    <content type="html"><![CDATA[<p>这是一个模板,方便在语雀中快速编写符合 Yuque-Hexo 语法得文章,按照该模板即可保证文章格式。</p><figure class="highlight markdown"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><code class="hljs markdown">---<br>title: 语雀Front-matter-demo for Fluid<br>cover: https://raw.githubusercontent.com/0x7b/CDN/master/img/20210123212934.png<br>sticky: 2<br>date: 2020-12-18<br>updated: 2020-1-23<br>tags: [Hexo, 运营]<br>categories: [博客维护]<br>keywords: "Hexo,运营"<br>toc: True<br>abbrlink: 1001<br>excerpt: 这是一个模板,方便在语雀中快速编写符合Yuque-Hexo语法得文章,按照该模板即可保证文章格式。<br>hide: false<br>---<br></code></pre></td></tr></table></figure><p>引入外部图片测试（语雀）<br><a href="https://cdn.jsdelivr.net/gh/0x7b/CDN/img/65033404_p0.jpg" target="_blank" rel="noopener"><img src="https://cdn.nlark.com/yuque/0/2020/jpeg/8398873/1608800119701-0aee20c6-8ea4-4ca2-959d-55ad5078c77c.jpeg#align=left&display=inline&height=1414&margin=%5Bobject%20Object%5D&originHeight=1414&originWidth=2000&size=0&status=done&style=none&width=2000" srcset="/img/loading.gif" alt=""></a><br>目前看来还是会受防盗链的影响，<br><a href="https://github.com/x-cold/yuque-hexo/issues/41" target="_blank" rel="noopener">解决办法</a></p><figure class="highlight html"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs html"><span class="hljs-tag">&lt;<span class="hljs-name">meta</span> <span class="hljs-attr">name</span>=<span class="hljs-string">"referrer"</span> <span class="hljs-attr">content</span>=<span class="hljs-string">"no-referrer"</span> /&gt;</span><br></code></pre></td></tr></table></figure><p>可直接在语雀中添加，即可为这篇文章 no-referrer 属性<br>但这个解决方法也具有局限性：只能在 Chrome 浏览器中生效</p>]]></content>
     
     
     <categories>
@@ -74,7 +74,9 @@
     
     <tags>
       
-      <tag>BUGs</tag>
+      <tag>Hexo</tag>
+      
+      <tag>运营</tag>
       
     </tags>
     
