@@ -40,11 +40,34 @@
   </entry>
   
   <entry>
+    <title>Writeup for 13届国赛</title>
+    <link href="https://www.0x7b.cn/posts/1004/"/>
+    <id>https://www.0x7b.cn/posts/1004/</id>
+    <published>2020-12-26T16:00:00.000Z</published>
+    <updated>2021-01-23T16:00:00.000Z</updated>
+    
+    
+    <summary type="html">第十三届全国大学生信息安全竞赛-创新能力实践赛部分题解</summary>
+    
+    
+    
+    <category term="CTF" scheme="https://www.0x7b.cn/categories/CTF/"/>
+    
+    
+    <category term="Writeup" scheme="https://www.0x7b.cn/tags/Writeup/"/>
+    
+    <category term="国赛" scheme="https://www.0x7b.cn/tags/%E5%9B%BD%E8%B5%9B/"/>
+    
+    <category term="CTF" scheme="https://www.0x7b.cn/tags/CTF/"/>
+    
+  </entry>
+  
+  <entry>
     <title>CDN下访问源站ERR_TOO_MANY_REDIRECTS</title>
     <link href="https://www.0x7b.cn/posts/1002/"/>
     <id>https://www.0x7b.cn/posts/1002/</id>
     <published>2020-12-20T16:00:00.000Z</published>
-    <updated>2021-01-24T10:34:14.376Z</updated>
+    <updated>2021-01-24T13:57:41.754Z</updated>
     
     
     <summary type="html">关于通过CDN访问GitHub pages浏览器提示重定向次数过多（ERR_TOO_MANY_REDIRECTS）问题解决</summary>
