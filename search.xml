@@ -90,6 +90,12 @@
       </tags>
   </entry>
   <entry>
+    <title>yuque/Hello world</title>
+    <url>/posts/22690/</url>
+    <content><![CDATA[<p>123…</p>
+]]></content>
+  </entry>
+  <entry>
     <title>Writeup for 13届国赛</title>
     <url>/posts/1004/</url>
     <content><![CDATA[<h3 id="Web-urbeautiful"><a href="#Web-urbeautiful" class="headerlink" title="Web_urbeautiful"></a>Web_urbeautiful</h3><p>这个题真的是一波三折，花了好长时间。万幸的是有队友细心且给力，最后终于是拿下了。这么费力的题一定要记录一下对吧。首先看题目入口，看看描述（没用）<br><img src="https://raw.githubusercontent.com/0x7b/CDN/master/img/20210124195002.jpg#align=left&display=inline&height=325&margin=%5Bobject%20Object%5D&originHeight=325&originWidth=692&status=done&style=none&width=692" srcset="/img/loading.gif" lazyload alt=""><br>靶机只有一个登录入口，fuzz 之后发现存在万能密码<br><img src="https://raw.githubusercontent.com/0x7b/CDN/master/img/20210124195003.jpg#align=left&display=inline&height=345&margin=%5Bobject%20Object%5D&originHeight=345&originWidth=692&status=done&style=none&width=692" srcset="/img/loading.gif" lazyload alt=""><br>用户名： <code>&#39;-&#39;&#39;#</code> 密码任意<br>登录后台，存在上传点，上传正常图片抓包发现没有数据包产生<br>F12 打开控制台查看网络发现使用 websocket 传输<br><img src="https://raw.githubusercontent.com/0x7b/CDN/master/img/20210124195004.jpg#align=left&display=inline&height=355&margin=%5Bobject%20Object%5D&originHeight=355&originWidth=691&status=done&style=none&width=691" srcset="/img/loading.gif" lazyload alt=""><br>此处用的是@skyxiaoyu 大佬的 WebSocket 测试工具，感谢大佬<br>使用 <code>set action</code>  上传文件<br><code>./</code>  绕过后缀名检查，上传 php 脚本文件但不解析。猜测服务端检测了文件内容是否为图片格式，于是将 phpinfo 语句写到图片里上传验证<br><img src="https://raw.githubusercontent.com/0x7b/CDN/master/img/20210124195005.png#align=left&display=inline&height=371&margin=%5Bobject%20Object%5D&originHeight=371&originWidth=691&status=done&style=none&width=691" srcset="/img/loading.gif" lazyload alt=""><br>如上图，phpinfo 在正常图片里可以被解析。思路得到证实，于是制作图片马上传<br><img src="https://raw.githubusercontent.com/0x7b/CDN/master/img/20210124195006.jpg#align=left&display=inline&height=339&margin=%5Bobject%20Object%5D&originHeight=339&originWidth=692&status=done&style=none&width=692" srcset="/img/loading.gif" lazyload alt=""><br>Hackbar 连接图片马，接下来就是找 flag 了<br><img src="https://raw.githubusercontent.com/0x7b/CDN/master/img/20210124195007.png#align=left&display=inline&height=371&margin=%5Bobject%20Object%5D&originHeight=371&originWidth=691&status=done&style=none&width=691" srcset="/img/loading.gif" lazyload alt=""><br>flag{5cdbd30292]</p>
