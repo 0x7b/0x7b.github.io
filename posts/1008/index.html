@@ -248,7 +248,7 @@
     
     <span class="post-meta mr-2">
       <i class="iconfont icon-chart"></i>
-      633 字
+      669 字
     </span>
   
 
@@ -316,10 +316,10 @@
 <p>其中 FileExtension 为枚举类型，白名单</p>
 <figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><code class="hljs vbnet"><span class="hljs-keyword">public</span> <span class="hljs-keyword">enum</span> FileExtension<br>&#123;<br>        JPG = <span class="hljs-number">255216</span>,<br>        GIF = <span class="hljs-number">7173</span>,<br>        BMP = <span class="hljs-number">6677</span>,<br>        PNG = <span class="hljs-number">13780</span><br>&#125;<br></code></pre></td></tr></table></figure>
 
-<p>这里判断文件合法性的操作并没有判断文件后缀，而是取文件内容前两个字节的十进制看是否在 FileExtension 里定义了。很经典的问题，我们可以制作上传图片马绕过或在木马 16 进制前添加两个字节写入枚举类型中任意一个。如 JPG 就是<code>FF D8</code>，<br><code>copy normal.jpg/b + shell.aspx/a shell.jpg</code><br>我一般习惯生成正常图片格式如的，然后 burp 抓包把.jpg 改为.aspx，免得遇到前端验证等的一些情况</p>
-<p>坑点就在改包的过程！<br>这是原始的包的 HEX<br><img src="https://cdn.nlark.com/yuque/0/2021/png/8398873/1629358890521-c0218d4c-70b0-4e79-beec-1350595fa0da.png#clientId=ud7846cb3-bdf1-4&from=paste&height=208&id=ue7115554&margin=%5Bobject%20Object%5D&name=ce25cbf34495d2eccc602d35fad7c51.png&originHeight=189&originWidth=649&originalType=binary&ratio=1&size=15856&status=done&style=none&taskId=u004db300-57f1-4f9e-9270-4c30109772b&width=714.5" srcset="/img/loading.gif" lazyload alt="ce25cbf34495d2eccc602d35fad7c51.png"><br>然后在 RAW 包选中 jpg，修改为 aspx 再次查看<br><img src="https://cdn.nlark.com/yuque/0/2021/png/8398873/1629358992145-f01167ab-8b1d-4b3b-8992-854bc18f2e27.png#clientId=ud7846cb3-bdf1-4&from=paste&height=176&id=u5ab3483c&margin=%5Bobject%20Object%5D&name=c56fc525e7414444330ac0f8a0413cd.png&originHeight=183&originWidth=720&originalType=binary&ratio=1&size=16932&status=done&style=none&taskId=u2652be74-ec15-4a5d-ac37-3f513f95bc9&width=692" srcset="/img/loading.gif" lazyload alt="c56fc525e7414444330ac0f8a0413cd.png"><br>可以看到图片文件头的几个字节全都变为了<code>ef bf bd</code>，通过和同事控制变量法最终得出结论：<del>我不适合挖洞</del>电脑字符集可能有问题。关于这个 UTF-8 字符可以看这篇文章<a href="https://liudanking.com/golang/utf-8_replacement_character/" target="_blank" rel="noopener">你应该记住的一个 UTF-8 字符「EF BF BD」</a><br>​</p>
+<p>这里判断文件合法性的操作并没有判断文件后缀，而是取文件内容前两个字节的十进制看是否在 FileExtension 里定义了。很经典的问题，我们可以制作上传图片马绕过或在木马 16 进制前添加两个字节写入枚举类型中任意一个。如 JPG 就是<code>FF D8</code>，<br><code>copy normal.jpg/b + shell.aspx/a shell.jpg</code><br>我一般习惯生成正常图片后缀的图片马，再使用 burp 抓包把图片后缀改为脚本后缀，免得遇到前端验证等的一些情况（别和我讲什么禁用 JS）</p>
+<p>坑点就在改包的过程！下图是原始的包的文件名和文件内容的 HEX 形式<br><img src="https://cdn.nlark.com/yuque/0/2021/png/8398873/1629358890521-c0218d4c-70b0-4e79-beec-1350595fa0da.png#clientId=ud7846cb3-bdf1-4&from=paste&height=208&id=ue7115554&margin=%5Bobject%20Object%5D&name=ce25cbf34495d2eccc602d35fad7c51.png&originHeight=189&originWidth=649&originalType=binary&ratio=1&size=15856&status=done&style=none&taskId=u004db300-57f1-4f9e-9270-4c30109772b&width=714.5" srcset="/img/loading.gif" lazyload alt="ce25cbf34495d2eccc602d35fad7c51.png"><br>然后在 RAW 包选中 jpg，修改为 aspx 再次查看<br><img src="https://cdn.nlark.com/yuque/0/2021/png/8398873/1629358992145-f01167ab-8b1d-4b3b-8992-854bc18f2e27.png#clientId=ud7846cb3-bdf1-4&from=paste&height=176&id=u5ab3483c&margin=%5Bobject%20Object%5D&name=c56fc525e7414444330ac0f8a0413cd.png&originHeight=183&originWidth=720&originalType=binary&ratio=1&size=16932&status=done&style=none&taskId=u2652be74-ec15-4a5d-ac37-3f513f95bc9&width=692" srcset="/img/loading.gif" lazyload alt="c56fc525e7414444330ac0f8a0413cd.png"><br>可以看到图片文件头的几个字节全都变为了<code>ef bf bd</code>（破案万岁）通过和同事控制变量法最终得出结论：<del>我不适合挖洞</del>电脑字符集可能有问题。关于这个 UTF-8 字符可以看这篇文章<a href="https://liudanking.com/golang/utf-8_replacement_character/" target="_blank" rel="noopener">你应该记住的一个 UTF-8 字符「EF BF BD」</a><br>​</p>
 <p>解决方法是直接在原始包的 HEX 选中指定字节进行编辑<br><img src="https://cdn.nlark.com/yuque/0/2021/png/8398873/1629361973790-71aef7af-8724-40e8-90ed-d994bc5fe058.png#clientId=u00e18eda-b5cd-4&from=paste&height=141&id=u5cac192f&margin=%5Bobject%20Object%5D&name=image.png&originHeight=282&originWidth=1918&originalType=binary&ratio=1&size=57448&status=done&style=none&taskId=u0998aee2-119b-4a4b-ba30-a0baeac36a8&width=959" srcset="/img/loading.gif" lazyload alt="image.png"></p>
-<p>条条道路通罗马，求知欲和细心是最重要的。</p>
+<p>所以条条道路通罗马，求知欲和细心是最重要的。</p>
 
             </div>
             <hr>
